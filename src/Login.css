@@ -1,0 +1,148 @@
+.login-page {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.login-container { 
+    width: 100%;
+    max-width: 450px;
+    margin: 50px auto;
+    padding: 40px 30px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h1 {
+    color: #fff;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.6);
+    font-size: 32px;
+}
+
+h2 {
+    color: #333;
+    margin-bottom: 25px;
+    font-weight: 500;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+input {
+    padding: 10px 15px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    height: 50px;
+    outline: none;
+    width: 350px;
+    transition: border 0.3s, box-shadow 0.3s;
+}
+
+input:focus {
+    border-color: #2575fc;
+    box-shadow: 0 0 5px rgba(37, 117, 252, 0.5);
+}
+
+button {
+    padding: 12px;
+    font-size: 16px;
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    background: linear-gradient(90deg, #4CAF50, #2E7D32);
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background: linear-gradient(90deg, #66BB6A, #388E3C);
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    font-weight: 500;
+    color: #777;
+}
+
+.auth-divider span {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.auth-divider span::before,
+.auth-divider span::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background-color: #ccc;
+}
+
+.auth-divider span::before {
+    left: 0;
+}
+
+.auth-divider span::after {
+    right: 0;
+}
+
+.register-prompt {
+    margin-top: 20px;
+    font-size: 22px;
+    color: #555;
+}
+
+.register-prompt a {
+    text-decoration: none;
+    color: #2575fc;
+    font-weight: 500;
+}
+
+.register-prompt a:hover {
+    text-decoration: underline;
+}
+
+.google-button {
+    width: 100% !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+}
+
+.google-login-button {
+    background: #4285F4;
+    color: #fff;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 10px;
+    width: 100%;
+    border: none;
+    margin-top: 10px;
+    transition: background 0.3s;
+}
+
+.google-login-button:hover {
+    background: #3367D6;
+}
