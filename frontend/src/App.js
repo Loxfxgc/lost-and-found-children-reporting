@@ -5,12 +5,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import NavBar from './NavBar';
 import Login from './Login';
 import Register from './Register';
-import CreateForm from './CreateForm';
-import EnquireForm from './EnquireForm';
+import CreateForm from './components/CreateForm';
+import EnquireForm from './components/EnquireForm';
 import RoleSelection from './RoleSelection';
-import ViewAllForms from './ViewAllForms';
-import ViewMyEnquiries from './ViewMyEnquiries';
-import { useAuth } from './authService';
+import ViewAllForms from './components/ViewAllForms';
+import ViewMyEnquiries from './components/ViewMyEnquiries';
+import { useAuth } from './services/authService';
+
 
 function AppContent() {
   const { isAuthenticated } = useAuth();

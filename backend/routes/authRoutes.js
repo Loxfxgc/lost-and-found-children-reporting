@@ -1,41 +1,43 @@
 const express = require('express');
 const router = express.Router();
-const { admin } = require('../config/firebase');
+
 const User = require('../models/userModel');
 const authMiddleware = require('../middleware/authMiddleware');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
-// POST register new user (Firebase auth is handled client-side)
+// POST register new user
 router.post('/register', async (req, res) => {
   try {
-    const { uid, email, displayName } = req.body;
-    
-    if (!uid || !email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User ID and email are required' 
+    const { email, password, displayName } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
       });
     }
-    
-    // Check if user already exists in our database
-    const existingUser = await User.findOne({ uid });
-    
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'User already exists'
       });
     }
-    
-    // Create user in our database
+
+    // Create user in database
     const newUser = new User({
-      uid,
       email,
       displayName: displayName || email.split('@')[0],
+      password, // You should hash the password before saving in production
       lastLogin: new Date()
     });
-    
+
     await newUser.save();
-    
+
     res.status(201).json({
       success: true,
       data: newUser,
@@ -51,57 +53,56 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// POST login user - token validation happens in middleware
+// POST login user
 router.post('/login', async (req, res) => {
   try {
-    const { idToken } = req.body;
-    
-    if (!idToken) {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'ID token is required'
+        message: 'Email and password are required'
       });
     }
-    
-    // Verify the token
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    
-    // Find or create user in our database
-    let user = await User.findOne({ uid: decodedToken.uid });
-    
+
+    // Find user
+    const user = await User.findOne({ email });
+
     if (!user) {
-      // Auto-create a user if not found
-      user = new User({
-        uid: decodedToken.uid,
-        email: decodedToken.email,
-        displayName: decodedToken.name || decodedToken.email.split('@')[0],
-        emailVerified: decodedToken.email_verified,
-        lastLogin: new Date()
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
       });
-      
-      await user.save();
-    } else {
-      // Update last login
-      user.lastLogin = new Date();
-      if (user.displayName !== decodedToken.name && decodedToken.name) {
-        user.displayName = decodedToken.name;
-      }
-      await user.save();
     }
-    
+
+    // Check password (in production, use hashed passwords)
+    if (user.password !== password) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ uid: user._id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
     res.status(200).json({
       success: true,
       data: {
         user,
-        token: idToken
+        token
       },
       message: 'Login successful'
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(401).json({
+    res.status(500).json({
       success: false,
-      message: 'Invalid token',
+      message: 'Error logging in',
       error: error.message
     });
   }

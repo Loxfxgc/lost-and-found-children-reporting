@@ -1,18 +1,18 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getDatabase } from "firebase/database";
+import { getAnalytics } from "firebase/analytics";
 
-// Firebase configuration
-// These values are automatically injected by the create-react-app build process
-// React automatically prefixes environment variables with REACT_APP_ for security reasons
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID
+  apiKey: "AIzaSyCw4Yx_1Q2PqHA-Y_Fa40JbXjh27X8SBz4",
+  authDomain: "safe-connect-3b60b.firebaseapp.com",
+  databaseURL: "https://safe-connect-3b60b-default-rtdb.firebaseio.com",
+  projectId: "safe-connect-3b60b",
+  storageBucket: "safe-connect-3b60b.firebasestorage.app",
+  messagingSenderId: "748525312057",
+  appId: "1:748525312057:web:3e6e39e8bbb424027a55e8",
+  measurementId: "G-5S5QV8CLW1"
 };
 
 // Initialize Firebase
@@ -20,5 +20,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const database = getDatabase(app);
+const analytics = getAnalytics(app);
 
-export { app, auth, provider, database };
+export { app, auth, provider, database, analytics };
