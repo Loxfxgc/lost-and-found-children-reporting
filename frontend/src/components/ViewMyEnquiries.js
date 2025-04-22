@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useUserType } from './UserTypeContext';
+import { useUserType } from '../UserTypeContext';
 import './Forms.css';
 
 const ViewMyEnquiries = () => {

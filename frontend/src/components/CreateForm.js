@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUserType } from './UserTypeContext';
+import { useUserType } from '../UserTypeContext';
 import './CreateForm.css';
 
 const CreateForm = () => {
