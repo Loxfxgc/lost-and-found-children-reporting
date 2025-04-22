@@ -1,31 +1,23 @@
 {
-  "name": "lost-and-found-children-reporting",
+  "name": "lost-and-found-children-reporting-frontend",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
     "@firebase/auth": "^1.10.0",
-    "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
     "appwrite": "^13.0.0",
     "axios": "^1.8.4",
-    "crypto-browserify": "^3.12.1",
-    "css-select": "^5.1.0",
     "firebase": "^11.6.0",
-    "nth-check": "^2.1.1",
-    "postcss": "^8.5.3",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-google-button": "^0.7.2",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^7.4.0",
     "react-scripts": "5.0.1",
     "speakeasy": "^2.0.0",
-    "supabase": "^2.20.12",
-    "svgo": "^3.3.2",
-    "url": "^0.11.4",
-    "util": "^0.12.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -54,5 +46,6 @@
   },
   "devDependencies": {
     "firebase-tools": "^14.1.0"
-  }
-}
+  },
+  "proxy": "http://localhost:5000"
+} 

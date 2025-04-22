@@ -1,70 +1,114 @@
-# Getting Started with Create React App
+# Lost and Found Children Reporting System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This application is structured with separate frontend and backend folders.
 
-## Available Scripts
+## Project Structure
 
-In the project directory, you can run:
+```
+lost-and-found-children-reporting/
+├── frontend/             # React frontend 
+│   ├── public/           # Static files
+│   └── src/              # React source code
+│       ├── assets/       # Images, fonts, etc.
+│       ├── components/   # Reusable components
+│       ├── contexts/     # React contexts
+│       ├── pages/        # Page components
+│       ├── services/     # API and other services
+│       └── utils/        # Utility functions
+├── backend/              # Express backend
+│   ├── config/           # Configuration files
+│   ├── controllers/      # Route controllers
+│   ├── middleware/       # Express middleware
+│   ├── models/           # Database models
+│   └── routes/           # API routes
+├── .env                  # Environment variables for both frontend and backend
+└── ...
+```
 
-### `npm start`
+## Environment Variables
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+The project uses a single `.env` file in the root directory that contains all environment variables for both frontend and backend.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Backend directly accesses variables from the root `.env` file
+- Frontend uses variables prefixed with `REACT_APP_` (automatically handled by Create React App)
 
-### `npm test`
+Create a `.env` file in the root directory based on the provided `.env.example` template.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Setup Instructions
 
-### `npm run build`
+### Backend Setup
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. Navigate to the backend directory:
+   ```
+   cd backend
+   ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+3. Start the backend server:
+   ```
+   npm run dev    # Development mode
+   npm start      # Production mode
+   ```
 
-### `npm run eject`
+The backend server will start on port 5000 by default.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Frontend Setup
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+1. Navigate to the frontend directory:
+   ```
+   cd frontend
+   ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+3. Start the frontend development server:
+   ```
+   npm start
+   ```
 
-## Learn More
+The frontend development server will start on port 3000 by default.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Quick Setup Script
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+You can use the included `setup.sh` script to install dependencies for both frontend and backend at once:
 
-### Code Splitting
+```
+chmod +x setup.sh
+./setup.sh
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Build for Production
 
-### Analyzing the Bundle Size
+### Frontend Build
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```
+cd frontend
+npm run build
+```
 
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+This will create optimized production build in the `frontend/build` directory.
 
 ### Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+For deployment, you can serve the backend and frontend separately or configure the backend to serve the frontend build.
 
-### `npm run build` fails to minify
+## Technologies Used
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Frontend
+- React
+- React Router
+- Firebase Authentication
+- Supabase
+
+### Backend
+- Express.js
+- MongoDB
+- Firebase Admin
+- Supabase
