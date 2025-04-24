@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { upload } = require('../config/gridfs');
+const { upload } = require('../config/cloudinary');
 const imageController = require('../controllers/imageController');
 
-// Upload image - uses multer middleware
+// Upload image - uses Cloudinary middleware
 router.post('/upload', upload.single('image'), imageController.uploadImage);
 
 // Get image by ID

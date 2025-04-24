@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useUserType } from './UserTypeContext';
 import { useNavigate } from 'react-router-dom';
 import { auth } from './services/firebase';
@@ -6,8 +6,31 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 const RoleSelection = () => {
     const navigate = useNavigate();
-    const { userType, setUserType, currentUser } = useUserType();
+    const { userType, setUserType } = useUserType();
     const [loading, setLoading] = useState(true);
+    
+    // Function to check if parent has reports and redirect accordingly
+    const checkAndRedirectParent = useCallback(async (uid) => {
+        const storedForms = JSON.parse(localStorage.getItem('myForms')) || [];
+        const myForms = storedForms.filter(form => form.userId === uid);
+        
+        if (myForms.length === 0) {
+            // No reports, redirect to create form
+            navigate('/create', { replace: true });
+        } else {
+            // Has reports, redirect to my reports
+            navigate('/my-enquiries', { replace: true });
+        }
+    }, [navigate]);
+    
+    // Function to redirect based on role
+    const redirectBasedOnRole = useCallback((role, uid) => {
+        if (role === 'parent') {
+            checkAndRedirectParent(uid);
+        } else if (role === 'searcher') {
+            navigate('/enquire', { replace: true });
+        }
+    }, [navigate, checkAndRedirectParent]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -15,26 +38,31 @@ const RoleSelection = () => {
                 navigate('/login');
             } else {
                 setLoading(false);
+                
+                // If user already has a role, redirect to appropriate page
+                if (userType) {
+                    redirectBasedOnRole(userType, user.uid);
+                }
             }
         });
 
         return () => unsubscribe();
-    }, [navigate]);
+    }, [navigate, userType, redirectBasedOnRole]);
 
     const handleRoleSelect = async (type) => {
         console.log('Role selected:', type);
         try {
-            // First update the context and localStorage
+            // Update the context and localStorage
             setUserType(type);
             localStorage.setItem('userType', type);
             
-            // Then navigate
-            const path = type === 'parent' ? '/create' : '/enquire';
-            navigate(path, { replace: true });
+            // Get the current user and redirect based on role
+            const user = auth.currentUser;
+            if (user) {
+                redirectBasedOnRole(type, user.uid);
+            }
         } catch (error) {
             console.error('Navigation failed:', error);
-            // Fallback to manual redirect if navigation fails
-            window.location.href = type === 'parent' ? '/create' : '/enquire';
         }
     };
 

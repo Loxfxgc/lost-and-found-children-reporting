@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useUserType } from '../UserTypeContext';
+import { imageService } from '../services/api';
 import './CreateForm.css';
 
 const CreateForm = () => {
@@ -11,10 +12,16 @@ const CreateForm = () => {
         lastSeenDate: '',
         contactInfo: '',
         photo: null,
-        photoPreview: null
+        photoPreview: null,
+        photoUrl: null,
+        photoId: null
     });
 
-    const handleChange = (e) => {
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const { currentUser } = useUserType();
+    const [errors, setErrors] = useState({});
+
+    const handleChange = async (e) => {
         const { name, value, files } = e.target;
         
         if (name === 'photo' && files && files[0]) {
@@ -27,6 +34,28 @@ const CreateForm = () => {
                 }));
             };
             reader.readAsDataURL(files[0]);
+
+            // Upload to Cloudinary
+            try {
+                setUploadingImage(true);
+                const response = await imageService.uploadImage(files[0], currentUser?.uid);
+                if (response.data.success) {
+                    setFormData(prev => ({
+                        ...prev,
+                        photoId: response.data.fileId,
+                        photoUrl: response.data.url
+                    }));
+                }
+            } catch (error) {
+                console.error('Error uploading image to Cloudinary:', error);
+                // Keep the local preview but show error message
+                setErrors(prev => ({
+                    ...prev,
+                    photo: 'Failed to upload image. The form will still work with a local image.'
+                }));
+            } finally {
+                setUploadingImage(false);
+            }
         } else {
             setFormData(prev => ({
                 ...prev,
@@ -35,14 +64,11 @@ const CreateForm = () => {
         }
     };
 
-    const { currentUser } = useUserType();
     console.log('Current User Auth State:', {
       uid: currentUser?.uid,
       isAnonymous: currentUser?.isAnonymous,
       emailVerified: currentUser?.emailVerified
     });
-
-    const [errors, setErrors] = useState({});
 
     const validateForm = () => {
         const newErrors = {};
@@ -71,12 +97,14 @@ const CreateForm = () => {
                 status: 'pending'
             };
             
-            // Save to localStorage with all form data including photo preview
+            // Save to localStorage with form data including Cloudinary info
             const existingForms = JSON.parse(localStorage.getItem('myForms')) || [];
             const newForm = {
               ...formWithUser,
               id: `local_${Date.now()}`, // Unique local ID
-              photoPreview: formData.photoPreview,
+              photoPreview: formData.photoPreview, // Local preview
+              photoUrl: formData.photoUrl, // Cloudinary URL
+              photoId: formData.photoId, // Cloudinary ID
               status: 'pending'
             };
             
@@ -116,7 +144,9 @@ const CreateForm = () => {
               lastSeenDate: '',
               contactInfo: '',
               photo: null,
-              photoPreview: null
+              photoPreview: null,
+              photoUrl: null,
+              photoId: null
             });
               
             } catch (error) {
@@ -221,12 +251,15 @@ const CreateForm = () => {
                     name="photo"
                     onChange={handleChange}
                     accept="image/*"
+                    disabled={uploadingImage}
                 />
+                {errors.photo && <span className="error">{errors.photo}</span>}
+                {uploadingImage && <span className="upload-status">Uploading image to cloud...</span>}
 
                 {formData.photoPreview && (
                     <div className="file-upload-preview">
                         <img src={formData.photoPreview} alt="Preview" />
-                        <p>Image Preview</p>
+                        <p>Image Preview {formData.photoUrl ? '(Uploaded to Cloud)' : '(Local Only)'}</p>
                     </div>
                 )}
 

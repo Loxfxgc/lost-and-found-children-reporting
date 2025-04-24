@@ -33,8 +33,11 @@ const userSchema = new Schema({
     index: true // Index for role-based queries
   },
   profilePicture: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'images.files', // Reference to GridFS image file
+    type: String, // Cloudinary public_id
+    default: null
+  },
+  profilePictureUrl: {
+    type: String, // Cloudinary URL
     default: null
   },
   // Additional user information

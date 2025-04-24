@@ -1,12 +1,20 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { auth } from './services/firebase';
 import { signOut } from 'firebase/auth';
 import { useAuth } from './services/authService';
+import { useUserType } from './UserTypeContext';
 
-const NavBar = ({ userType }) => {
+const NavBar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
+  const { userType } = useUserType();
+  
+  // Don't show navbar on login/register pages
+  if (['/login', '/register'].includes(location.pathname)) {
+    return null;
+  }
 
   const handleLogout = async () => {
     try {
@@ -36,18 +44,43 @@ const NavBar = ({ userType }) => {
       </div>
       
       <div style={{ display: 'flex', gap: '20px' }}>
+        {/* Parent role links */}
         {userType === 'parent' && (
           <>
-            <Link to="/create" style={{ textDecoration: 'none', color: '#5a5c69' }}>Report Missing</Link>
-            <Link to="/my-reports" style={{ textDecoration: 'none', color: '#5a5c69' }}>My Reports</Link>
+            <Link to="/create" style={{ 
+              textDecoration: 'none', 
+              color: location.pathname === '/create' ? '#4e73df' : '#5a5c69',
+              fontWeight: location.pathname === '/create' ? 'bold' : 'normal'
+            }}>
+              Report Missing
+            </Link>
+            <Link to="/my-enquiries" style={{ 
+              textDecoration: 'none', 
+              color: location.pathname === '/my-enquiries' ? '#4e73df' : '#5a5c69',
+              fontWeight: location.pathname === '/my-enquiries' ? 'bold' : 'normal'
+            }}>
+              My Reports
+            </Link>
           </>
         )}
         
+        {/* Searcher role links */}
         {userType === 'searcher' && (
           <>
-            <Link to="/search" style={{ textDecoration: 'none', color: '#5a5c69' }}>Search Missing</Link>
-            <Link to="/enquire" style={{ textDecoration: 'none', color: '#5a5c69' }}>Make Enquiry</Link>
-            <Link to="/my-enquiries" style={{ textDecoration: 'none', color: '#5a5c69' }}>My Enquiries</Link>
+            <Link to="/enquire" style={{ 
+              textDecoration: 'none', 
+              color: location.pathname === '/enquire' ? '#4e73df' : '#5a5c69',
+              fontWeight: location.pathname === '/enquire' ? 'bold' : 'normal'
+            }}>
+              Search Missing
+            </Link>
+            <Link to="/view" style={{ 
+              textDecoration: 'none', 
+              color: location.pathname === '/view' ? '#4e73df' : '#5a5c69',
+              fontWeight: location.pathname === '/view' ? 'bold' : 'normal'
+            }}>
+              View All Reports
+            </Link>
           </>
         )}
         

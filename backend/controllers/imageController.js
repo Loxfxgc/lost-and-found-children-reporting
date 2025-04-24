@@ -1,66 +1,55 @@
 const mongoose = require('mongoose');
-const { getGfs } = require('../config/gridfs');
+const { cloudinary } = require('../config/cloudinary');
 const ObjectId = mongoose.Types.ObjectId;
 
 // Upload an image
-// Note: This relies on the multer middleware from gridfs.js being used beforehand
+// Note: This relies on the multer middleware from cloudinary.js being used beforehand
 const uploadImage = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
     
-    // Return the file information including the ID which can be stored in the report/enquiry
+    // Return the Cloudinary file information
     return res.status(201).json({
       success: true,
-      fileId: req.file.id,
-      filename: req.file.filename,
-      message: 'Image uploaded successfully'
+      fileId: req.file.filename, // Cloudinary public_id
+      url: req.file.path, // Cloudinary secure URL
+      filename: req.file.originalname,
+      message: 'Image uploaded successfully to Cloudinary'
     });
   } catch (error) {
     return res.status(500).json({
-      message: 'Error uploading image',
+      message: 'Error uploading image to Cloudinary',
       error: error.message
     });
   }
 };
 
 // Get an image by ID
+// Note: For Cloudinary, we don't need to stream the file, we can redirect to the URL
 const getImage = async (req, res) => {
   try {
-    const gfs = getGfs();
-    
-    if (!gfs) {
-      return res.status(500).json({ message: 'GridFS not initialized' });
-    }
-    
     const fileId = req.params.id;
     
-    if (!ObjectId.isValid(fileId)) {
-      return res.status(400).json({ message: 'Invalid file ID' });
+    // Get the resource information from Cloudinary
+    const result = await cloudinary.api.resource(fileId);
+    
+    if (!result) {
+      return res.status(404).json({ message: 'Image not found' });
     }
     
-    const file = await gfs.files.findOne({ _id: new ObjectId(fileId) });
-    
-    if (!file) {
-      return res.status(404).json({ message: 'File not found' });
-    }
-    
-    // Check if file is an image
-    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.contentType)) {
-      return res.status(400).json({ message: 'File is not an image' });
-    }
-    
-    // Set the appropriate content type
-    res.set('Content-Type', file.contentType);
-    
-    // Create a read stream and pipe it to the response
-    const readstream = gfs.createReadStream(file._id);
-    readstream.pipe(res);
+    // Redirect to the secure URL
+    return res.redirect(result.secure_url);
     
   } catch (error) {
+    // If resource not found or any other error
+    if (error.http_code === 404) {
+      return res.status(404).json({ message: 'Image not found' });
+    }
+    
     return res.status(500).json({
-      message: 'Error retrieving image',
+      message: 'Error retrieving image from Cloudinary',
       error: error.message
     });
   }
@@ -69,24 +58,19 @@ const getImage = async (req, res) => {
 // Delete an image by ID
 const deleteImage = async (req, res) => {
   try {
-    const gfs = getGfs();
-    
-    if (!gfs) {
-      return res.status(500).json({ message: 'GridFS not initialized' });
-    }
-    
     const fileId = req.params.id;
     
-    if (!ObjectId.isValid(fileId)) {
-      return res.status(400).json({ message: 'Invalid file ID' });
+    // Delete the image from Cloudinary
+    const result = await cloudinary.uploader.destroy(fileId);
+    
+    if (result.result !== 'ok') {
+      return res.status(500).json({ message: 'Failed to delete the image from Cloudinary' });
     }
     
-    await gfs.remove({ _id: new ObjectId(fileId), root: 'images' });
-    
-    return res.status(200).json({ message: 'Image deleted successfully' });
+    return res.status(200).json({ message: 'Image deleted successfully from Cloudinary' });
   } catch (error) {
     return res.status(500).json({
-      message: 'Error deleting image',
+      message: 'Error deleting image from Cloudinary',
       error: error.message
     });
   }

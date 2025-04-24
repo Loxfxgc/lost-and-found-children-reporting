@@ -148,8 +148,15 @@ export const imageService = {
     });
   },
   
-  // Get image URL
-  getImageUrl: (imageId) => `${API_URL}/images/${imageId}`,
+  // Get image URL - for Cloudinary, we can directly use the URL returned from the server
+  getImageUrl: (imageUrl, imageId) => {
+    // If full URL is provided, use it directly (Cloudinary)
+    if (imageUrl && imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    // Fall back to the old method using imageId if needed
+    return imageId ? `${API_URL}/images/${imageId}` : null;
+  },
   
   // Delete image
   deleteImage: (imageId) => api.delete(`/images/${imageId}`),

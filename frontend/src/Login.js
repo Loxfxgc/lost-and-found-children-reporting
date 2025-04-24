@@ -3,11 +3,13 @@ import { auth, provider } from './services/firebase';
 import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from './services/authService';
+import { useUserType } from './UserTypeContext';
 import axios from 'axios';
 
 const Login = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
+    const { setUserType } = useUserType();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -30,13 +32,42 @@ const Login = () => {
         }
     };
 
+    // Handle redirection after authentication
+    const handlePostLoginRedirect = (user) => {
+        const storedUserType = localStorage.getItem('userType');
+        
+        if (storedUserType) {
+            setUserType(storedUserType);
+            
+            // Check if parent and has reports
+            if (storedUserType === 'parent') {
+                const storedForms = JSON.parse(localStorage.getItem('myForms')) || [];
+                const myForms = storedForms.filter(form => form.userId === user.uid);
+                
+                if (myForms.length === 0) {
+                    // No reports, go to create form
+                    navigate('/create', { replace: true });
+                } else {
+                    // Has reports, go to my reports
+                    navigate('/my-enquiries', { replace: true });
+                }
+            } else if (storedUserType === 'searcher') {
+                // Searcher, go to enquiry page
+                navigate('/enquire', { replace: true });
+            }
+        } else {
+            // No role selected, go to role selection
+            navigate('/role-selection', { replace: true });
+        }
+    };
+
     const handleGoogleLogin = async () => {
         setLoading(true);
         setError('');
         try {
             const result = await signInWithPopup(auth, provider);
             await storeAuthToken(result.user);
-            navigate('/role-selection');
+            handlePostLoginRedirect(result.user);
         } catch (error) {
             console.error('Login error:', error);
             if (error.code === 'auth/popup-blocked') {
@@ -58,7 +89,7 @@ const Login = () => {
         try {
             const result = await signInWithEmailAndPassword(auth, email, password);
             await storeAuthToken(result.user);
-            navigate('/role-selection');
+            handlePostLoginRedirect(result.user);
         } catch (error) {
             console.error('Login error:', error);
             setError('Failed to login. Please check your credentials.');

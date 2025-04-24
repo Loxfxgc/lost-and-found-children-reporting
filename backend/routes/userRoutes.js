@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { upload } = require('../config/gridfs');
+const { upload } = require('../config/cloudinary');
 
 // Create or update user
 router.post('/', userController.createOrUpdateUser);

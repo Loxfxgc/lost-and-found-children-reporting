@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { imageService } from '../services/api';
 import './Forms.css';
 
 const EnquireForm = () => {
@@ -23,6 +24,20 @@ const EnquireForm = () => {
         });
         
         setSearchResults(results);
+    };
+
+    // Helper function to get the best available image URL
+    const getImageUrl = (form) => {
+        // First try to use Cloudinary URL if available
+        if (form.photoUrl) {
+            return form.photoUrl;
+        }
+        // Then try to use photoId with Cloudinary
+        else if (form.photoId) {
+            return imageService.getImageUrl(null, form.photoId);
+        }
+        // Fallback to local preview
+        return form.photoPreview;
     };
 
     return (
@@ -76,8 +91,16 @@ const EnquireForm = () => {
                                 <h4>{form.name}, {form.age}</h4>
                                 <p>Last seen: {form.location} on {new Date(form.lastSeenDate).toLocaleDateString()}</p>
                                 <p>Status: <span className={`status-${form.status}`}>{form.status}</span></p>
-                                {form.photoPreview && (
-                                    <img src={form.photoPreview} alt="Child" className="result-photo" />
+                                {(form.photoPreview || form.photoUrl || form.photoId) && (
+                                    <img 
+                                        src={getImageUrl(form)} 
+                                        alt="Child" 
+                                        className="result-photo"
+                                        onError={(e) => {
+                                            // Fall back to photoPreview if Cloudinary URL fails
+                                            e.target.src = form.photoPreview || '';
+                                        }} 
+                                    />
                                 )}
                             </div>
                         ))}
