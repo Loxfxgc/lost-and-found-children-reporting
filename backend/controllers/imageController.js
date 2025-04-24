@@ -10,15 +10,19 @@ const uploadImage = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
     
+    console.log('File uploaded to Cloudinary:', req.file);
+    
     // Return the Cloudinary file information
     return res.status(201).json({
       success: true,
-      fileId: req.file.filename, // Cloudinary public_id
-      url: req.file.path, // Cloudinary secure URL
+      fileId: req.file.filename || req.file.public_id, // Cloudinary public_id
+      url: req.file.path || req.file.secure_url, // Cloudinary secure URL
+      secure_url: req.file.secure_url, // Explicit secure URL
       filename: req.file.originalname,
       message: 'Image uploaded successfully to Cloudinary'
     });
   } catch (error) {
+    console.error('Cloudinary upload error:', error);
     return res.status(500).json({
       message: 'Error uploading image to Cloudinary',
       error: error.message

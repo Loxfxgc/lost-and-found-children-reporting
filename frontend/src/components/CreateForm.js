@@ -39,11 +39,22 @@ const CreateForm = () => {
             try {
                 setUploadingImage(true);
                 const response = await imageService.uploadImage(files[0], currentUser?.uid);
-                if (response.data.success) {
+                console.log('Cloudinary upload response:', response.data);
+                
+                if (response.data && response.data.success) {
+                    const cloudinaryUrl = response.data.url || response.data.secure_url;
                     setFormData(prev => ({
                         ...prev,
                         photoId: response.data.fileId,
-                        photoUrl: response.data.url
+                        photoUrl: cloudinaryUrl
+                    }));
+                    
+                    console.log('Image uploaded successfully to Cloudinary:', cloudinaryUrl);
+                } else {
+                    console.error('No success in response:', response.data);
+                    setErrors(prev => ({
+                        ...prev,
+                        photo: 'Failed to upload image. The form will still work with a local image.'
                     }));
                 }
             } catch (error) {

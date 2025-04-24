@@ -7,6 +7,7 @@ const EnquireForm = () => {
     const [location, setLocation] = useState('');
     const [age, setAge] = useState('');
     const [searchResults, setSearchResults] = useState([]);
+    const [loadingImage, setLoadingImage] = useState({});
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -24,20 +25,53 @@ const EnquireForm = () => {
         });
         
         setSearchResults(results);
+        
+        // Reset loading states for image loading
+        const newLoadingStates = {};
+        results.forEach(form => {
+            newLoadingStates[form.id] = true;
+        });
+        setLoadingImage(newLoadingStates);
     };
 
     // Helper function to get the best available image URL
     const getImageUrl = (form) => {
         // First try to use Cloudinary URL if available
         if (form.photoUrl) {
+            console.log('Using Cloudinary URL:', form.photoUrl);
             return form.photoUrl;
         }
         // Then try to use photoId with Cloudinary
         else if (form.photoId) {
+            console.log('Using image ID:', form.photoId);
             return imageService.getImageUrl(null, form.photoId);
         }
         // Fallback to local preview
+        console.log('Using local preview');
         return form.photoPreview;
+    };
+    
+    const handleImageLoad = (formId) => {
+        setLoadingImage(prev => ({
+            ...prev,
+            [formId]: false
+        }));
+    };
+    
+    const handleImageError = (e, form) => {
+        console.error('Image load error for form:', form.id);
+        // Fall back to photoPreview if Cloudinary URL fails
+        if (form.photoPreview) {
+            e.target.src = form.photoPreview;
+        } else {
+            // Hide the image if both Cloudinary and local preview fail
+            e.target.style.display = 'none';
+        }
+        
+        setLoadingImage(prev => ({
+            ...prev,
+            [form.id]: false
+        }));
     };
 
     return (
@@ -92,15 +126,16 @@ const EnquireForm = () => {
                                 <p>Last seen: {form.location} on {new Date(form.lastSeenDate).toLocaleDateString()}</p>
                                 <p>Status: <span className={`status-${form.status}`}>{form.status}</span></p>
                                 {(form.photoPreview || form.photoUrl || form.photoId) && (
-                                    <img 
-                                        src={getImageUrl(form)} 
-                                        alt="Child" 
-                                        className="result-photo"
-                                        onError={(e) => {
-                                            // Fall back to photoPreview if Cloudinary URL fails
-                                            e.target.src = form.photoPreview || '';
-                                        }} 
-                                    />
+                                    <div className="image-container">
+                                        {loadingImage[form.id] && <div className="image-loading">Loading image...</div>}
+                                        <img 
+                                            src={getImageUrl(form)} 
+                                            alt="Child" 
+                                            className="result-photo"
+                                            onLoad={() => handleImageLoad(form.id)}
+                                            onError={(e) => handleImageError(e, form)}
+                                        />
+                                    </div>
                                 )}
                             </div>
                         ))}

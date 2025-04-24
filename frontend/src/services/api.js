@@ -151,8 +151,12 @@ export const imageService = {
   // Get image URL - for Cloudinary, we can directly use the URL returned from the server
   getImageUrl: (imageUrl, imageId) => {
     // If full URL is provided, use it directly (Cloudinary)
-    if (imageUrl && imageUrl.startsWith('http')) {
+    if (imageUrl && (imageUrl.startsWith('http') || imageUrl.startsWith('https'))) {
       return imageUrl;
+    }
+    // Check for secure URL in object format
+    if (imageUrl && imageUrl.secure_url) {
+      return imageUrl.secure_url;
     }
     // Fall back to the old method using imageId if needed
     return imageId ? `${API_URL}/images/${imageId}` : null;

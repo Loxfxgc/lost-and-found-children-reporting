@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { imageService } from '../services/api';
 import './Forms.css';
 
 const ViewAllForms = () => {
@@ -29,6 +30,20 @@ const ViewAllForms = () => {
         }
         setFilteredForms(result);
     }, [forms, filter, searchTerm]);
+    
+    // Helper function to get the best image URL
+    const getImageUrl = (form) => {
+        // First try to use Cloudinary URL if available
+        if (form.photoUrl) {
+            return form.photoUrl;
+        }
+        // Then try to use photoId with Cloudinary
+        else if (form.photoId) {
+            return imageService.getImageUrl(null, form.photoId);
+        }
+        // Fallback to local preview
+        return form.photoPreview;
+    };
 
     return (
         <div className="forms-container">
@@ -52,8 +67,18 @@ const ViewAllForms = () => {
                             <h3>{form.name}, {form.age}</h3>
                             <p>Last seen: {form.location} on {new Date(form.lastSeenDate).toLocaleDateString()}</p>
                             <p>Status: <span className={`status-${form.status}`}>{form.status}</span></p>
-                            {form.photoPreview && (
-                                <img src={form.photoPreview} alt="Child" className="form-photo-preview"/>
+                            {(form.photoPreview || form.photoUrl || form.photoId) && (
+                                <img 
+                                    src={getImageUrl(form)} 
+                                    alt="Child" 
+                                    className="form-photo-preview"
+                                    onError={(e) => {
+                                        // Fall back to photoPreview if Cloudinary URL fails
+                                        if (form.photoPreview) {
+                                            e.target.src = form.photoPreview;
+                                        }
+                                    }}
+                                />
                             )}
                             {form.responses && form.responses.length > 0 && (
                                 <div className="responses-section">
