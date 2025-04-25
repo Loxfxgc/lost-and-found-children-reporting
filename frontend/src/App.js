@@ -11,6 +11,8 @@ import RoleSelection from './RoleSelection';
 import ViewAllForms from './components/ViewAllForms';
 import ViewMyEnquiries from './components/ViewMyEnquiries';
 import { useAuth } from './services/authService';
+// import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
 
 function RedirectHandler() {
   const { isAuthenticated } = useAuth();
@@ -65,13 +67,13 @@ function AppContent() {
   const { userType } = useUserType();
 
   return (
-    <Router>
+    <>
       {isAuthenticated && <NavBar />}
       <RedirectHandler />
       <Routes>
+        <Route path="/" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/role-selection" />} />
         <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
         <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" />} />
-        <Route path="/" element={<Navigate to="/role-selection" replace />} />
         <Route path="/role-selection" element={isAuthenticated ? <RoleSelection /> : <Navigate to="/login" />} />
         <Route path="/create" element={isAuthenticated ? <CreateForm /> : <Navigate to="/login" />} />
         <Route path="/view" element={isAuthenticated ? <ViewAllForms /> : <Navigate to="/login" />} />
@@ -80,13 +82,12 @@ function AppContent() {
         <Route path="/my-enquiries" element={isAuthenticated ? <ViewMyEnquiries /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </Router>
+    </>
   );
 }
 
 function App() {
   const handleResetError = useCallback(() => {
-    // Clear any problematic state
     localStorage.removeItem('userType');
     window.location.reload();
   }, []);
@@ -94,7 +95,9 @@ function App() {
   return (
     <ErrorBoundary onReset={handleResetError}>
       <UserTypeProvider>
-        <AppContent />
+        <Router>
+          <AppContent />
+        </Router>
       </UserTypeProvider>
     </ErrorBoundary>
   );
