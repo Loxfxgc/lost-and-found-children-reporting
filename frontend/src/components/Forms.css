@@ -801,3 +801,86 @@ body {
   font-weight: bold;
   margin-right: auto;
 }
+
+/* Camera Button and Modal Styles */
+.camera-toggle-button {
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-left: 0.5rem;
+}
+
+.camera-toggle-button:hover {
+  background-color: #0d8aee;
+}
+
+.camera-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.camera-modal-content {
+  width: 100%;
+  max-width: 550px;
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.camera-modal-content h3 {
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.camera-modal-content p {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #666;
+}
+
+.close-camera-button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 20px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.close-camera-button:hover {
+  background-color: #d32f2f;
+}
+
+@media (max-width: 600px) {
+  .camera-modal-content {
+    max-width: 100%;
+    height: auto;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}

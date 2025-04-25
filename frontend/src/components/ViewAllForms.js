@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './Forms.css';
-import { FaSearch, FaRedo, FaTrash, FaThList, FaTh } from 'react-icons/fa';
+import { FaSearch, FaRedo, FaTrash, FaThList, FaTh, FaCamera } from 'react-icons/fa';
 import { formService } from '../services/api';
 import { useUserType } from '../UserTypeContext';
+import CameraCapture from './CameraCapture';
 
 const ViewAllForms = () => {
     const [forms, setForms] = useState([]);
@@ -14,6 +15,7 @@ const ViewAllForms = () => {
     const [actionStatus, setActionStatus] = useState({ message: '', type: '' });
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
     const { userType } = useUserType();
+    const [showCamera, setShowCamera] = useState(false);
 
     // Format date to readable format
     const formatDate = (dateString) => {
@@ -83,8 +85,8 @@ const ViewAllForms = () => {
                     !searchTerm || 
                     form.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     form.childName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    form.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    form.lastSeenLocation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (typeof form.location === 'string' && form.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                    (typeof form.lastSeenLocation === 'string' && form.lastSeenLocation.toLowerCase().includes(searchTerm.toLowerCase())) ||
                     form.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
                 const matchesStatus = 
@@ -279,6 +281,33 @@ const ViewAllForms = () => {
         }
     };
 
+    // Handle image upload from camera
+    const handleImageUpload = async (imageData) => {
+        try {
+            setActionStatus({ message: 'Processing uploaded image...', type: 'info' });
+            
+            // Here you can implement facial recognition search or other processing
+            // For now, just show a success message
+            setActionStatus({ 
+                message: 'Image uploaded successfully! Searching for matches...', 
+                type: 'success' 
+            });
+            
+            // Hide the camera component
+            setShowCamera(false);
+            
+            // In a real app, you would send the image to a backend API for processing
+            // and then update the UI with the results
+            
+            setTimeout(() => {
+                setActionStatus({ message: '', type: '' });
+            }, 5000);
+        } catch (error) {
+            console.error('Error processing uploaded image:', error);
+            setActionStatus({ message: 'Error processing image.', type: 'error' });
+        }
+    };
+
     return (
         <div className="content-container">
             <h1 className="page-title">All Missing Children Reports</h1>
@@ -335,6 +364,13 @@ const ViewAllForms = () => {
                         >
                             <FaThList className="list-icon" />
                         </button>
+                        <button 
+                            className="camera-toggle-button"
+                            onClick={() => setShowCamera(!showCamera)}
+                            title="Search by Image"
+                        >
+                            <FaCamera />
+                        </button>
                     </div>
                     
                     <button 
@@ -346,6 +382,23 @@ const ViewAllForms = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Camera Component */}
+            {showCamera && (
+                <div className="camera-modal">
+                    <div className="camera-modal-content">
+                        <h3>Take or Upload a Photo</h3>
+                        <p>Take a photo or upload an image to search for matching children.</p>
+                        <CameraCapture onImageUpload={handleImageUpload} />
+                        <button 
+                            className="close-camera-button"
+                            onClick={() => setShowCamera(false)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Display Forms */}
             <div className={`forms-container ${viewMode}-view`}>

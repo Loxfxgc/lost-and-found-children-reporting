@@ -99,19 +99,12 @@ const NavBar = () => {
         {/* Searcher role links */}
         {userType === 'searcher' && (
           <>
-            <Link to="/enquire" style={{ 
-              textDecoration: 'none', 
-              color: location.pathname === '/enquire' ? '#4e73df' : '#5a5c69',
-              fontWeight: location.pathname === '/enquire' ? 'bold' : 'normal'
-            }}>
-              Search Missing
-            </Link>
             <Link to="/view" style={{ 
               textDecoration: 'none', 
               color: location.pathname === '/view' ? '#4e73df' : '#5a5c69',
               fontWeight: location.pathname === '/view' ? 'bold' : 'normal'
             }}>
-              View All Reports
+              View Reports
             </Link>
           </>
         )}

@@ -6,9 +6,8 @@ import NavBar from './NavBar';
 import Login from './Login';
 import Register from './Register';
 import CreateForm from './components/CreateForm';
-import EnquireForm from './components/EnquireForm';
-import RoleSelection from './RoleSelection';
 import ViewAllForms from './components/ViewAllForms';
+import RoleSelection from './RoleSelection';
 import ViewMyEnquiries from './components/ViewMyEnquiries';
 import { useAuth } from './services/authService';
 import LandingPage from './pages/LandingPage';
@@ -75,9 +74,9 @@ function RedirectHandler() {
         return <Navigate to="/my-enquiries" replace />;
       }
       
-      // For searcher, go to search page
+      // For searcher, go to view all reports page with camera functionality
       if (userType === 'searcher') {
-        return <Navigate to="/enquire" replace />;
+        return <Navigate to="/view" replace />;
       }
     } else {
       // No userType, go to role selection only if not already there
@@ -118,7 +117,7 @@ function RedirectHandler() {
       } else if (userType === 'parent' && hasReports) {
         return <Navigate to="/my-enquiries" replace />;
       } else if (userType === 'searcher') {
-        return <Navigate to="/enquire" replace />;
+        return <Navigate to="/view" replace />;
       }
     }
   }
@@ -155,8 +154,6 @@ function AppContent() {
         <Route path="/role-selection" element={isAuthenticated ? <RoleSelection /> : <Navigate to="/" />} />
         <Route path="/create" element={isAuthenticated ? <CreateForm /> : <Navigate to="/" />} />
         <Route path="/view" element={isAuthenticated ? <ViewAllForms /> : <Navigate to="/" />} />
-        <Route path="/enquire" element={isAuthenticated ? <EnquireForm /> : <Navigate to="/" />} />
-        <Route path="/search" element={isAuthenticated ? <ViewAllForms filter="pending" /> : <Navigate to="/" />} />
         <Route path="/my-enquiries" element={isAuthenticated ? <ViewMyEnquiries /> : <Navigate to="/" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
