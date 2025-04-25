@@ -25,27 +25,6 @@ lost-and-found-children-reporting/
 └── ...
 ```
 
-## Environment Variables
-
-The project uses a single `.env` file in the root directory that contains all environment variables for both frontend and backend.
-
-- Backend directly accesses variables from the root `.env` file
-- Frontend uses variables prefixed with `REACT_APP_` (automatically handled by Create React App)
-
-Create a `.env` file in the root directory based on the provided `.env.example` template.
-
-### Cloudinary Configuration
-
-The system uses Cloudinary for image storage and retrieval. Add the following to your `.env` file:
-
-```
-# Cloudinary Configuration
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-```
-
-You can sign up for a free Cloudinary account at [https://cloudinary.com/](https://cloudinary.com/) and get these credentials from your dashboard.
 
 ## Setup Instructions
 
@@ -126,12 +105,3 @@ For deployment, you can serve the backend and frontend separately or configure t
 - Firebase Admin
 - Cloudinary (image storage and retrieval)
 
-## Image Management
-
-This application uses Cloudinary for efficient image storage and delivery. The key features include:
-
-- Automatic image optimization and transformation
-- Secure image uploads directly to Cloudinary
-- Fast CDN-based image delivery
-- Fallback to local storage when Cloudinary is unavailable
-- Support for various image formats (JPEG, PNG, GIF, WebP)
