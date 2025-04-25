@@ -18,15 +18,15 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'lost-and-found-children',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    transformation: [{ width: 1000, crop: 'limit' }], // Resize images to max width of 1000px
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [
+      { width: 1000, height: 1000, crop: 'limit' }, // Resize images to reasonable dimensions
+      { quality: 'auto' } // Optimize quality
+    ],
     format: 'jpg', // Convert all images to JPG for consistency
     resource_type: 'auto', // Auto-detect resource type
-  },
-  filename: (req, file, cb) => {
-    // Generate a unique file name
-    const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, uniqueFilename);
+    use_filename: true, // Use original filename as part of public ID
+    unique_filename: true, // Ensure unique filenames
   }
 });
 
@@ -34,7 +34,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB limit
     files: 1, // Only one file at a time
   },
   fileFilter: (req, file, cb) => {
@@ -46,6 +46,22 @@ const upload = multer({
     cb(null, true);
   },
 });
+
+// Debug function to check if Cloudinary is properly configured
+const checkCloudinaryConfig = async () => {
+  try {
+    // Attempt to access account info to verify credentials
+    const result = await cloudinary.api.ping();
+    console.log('✅ Cloudinary connection successful:', result.status);
+    return true;
+  } catch (error) {
+    console.error('❌ Cloudinary connection failed:', error.message);
+    return false;
+  }
+};
+
+// Run the check
+checkCloudinaryConfig();
 
 module.exports = {
   cloudinary,

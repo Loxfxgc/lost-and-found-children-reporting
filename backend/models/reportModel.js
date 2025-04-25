@@ -54,6 +54,15 @@ const reportSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     default: null
   },
+  // Store Cloudinary info
+  photoUrl: {
+    type: String,
+    default: null
+  },
+  photoId: {
+    type: String,
+    default: null
+  },
   additionalDetails: {
     type: String,
     default: ''

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+  import React, { useCallback, useEffect, useState } from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import { UserTypeProvider, useUserType } from './UserTypeContext';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -11,8 +11,20 @@ import RoleSelection from './RoleSelection';
 import ViewAllForms from './components/ViewAllForms';
 import ViewMyEnquiries from './components/ViewMyEnquiries';
 import { useAuth } from './services/authService';
-// import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
+import { setupStorageListener, startFormPolling, stopFormPolling, formService } from './services/api';
+
+// Initialize global real-time updates
+const initializeRealTimeUpdates = () => {
+  console.log('Initializing real-time updates system');
+  setupStorageListener();
+  startFormPolling(30000); // Check every 30 seconds at app level
+  
+  // Clear any localStorage data since we're moving entirely to MongoDB
+  console.log('Migrating to MongoDB - clearing any localStorage data');
+  localStorage.removeItem('forms');
+  localStorage.removeItem('myForms');
+};
 
 function RedirectHandler() {
   const { isAuthenticated } = useAuth();
@@ -24,11 +36,25 @@ function RedirectHandler() {
   // Check if user has submitted any reports
   useEffect(() => {
     if (isAuthenticated && userType === 'parent' && currentUser?.uid) {
-      const storedForms = JSON.parse(localStorage.getItem('myForms')) || [];
-      const myForms = storedForms.filter(form => form.userId === currentUser.uid);
-      setHasReports(myForms.length > 0);
+      // Using the database to check for reports instead of localStorage
+      const checkReports = async () => {
+        try {
+          setLoading(true);
+          const response = await formService.getMyForms(currentUser.uid);
+          const myForms = response.data || response;
+          setHasReports(Array.isArray(myForms) && myForms.length > 0);
+        } catch (error) {
+          console.error('Error checking for user reports:', error);
+          setHasReports(false);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      checkReports();
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, [isAuthenticated, userType, currentUser]);
   
   if (loading) {
@@ -64,7 +90,21 @@ function RedirectHandler() {
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
+  // eslint-disable-next-line no-unused-vars
   const { userType } = useUserType();
+
+  // Set up real-time updates at app level
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('User authenticated, initializing real-time updates');
+      initializeRealTimeUpdates();
+      
+      return () => {
+        console.log('Cleaning up real-time updates');
+        stopFormPolling();
+      };
+    }
+  }, [isAuthenticated]);
 
   return (
     <>

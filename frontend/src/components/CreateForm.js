@@ -1,280 +1,437 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { formService, imageService } from '../services/api';
+import cloudinary from '../services/cloudinary';
 import { useUserType } from '../UserTypeContext';
-import { imageService } from '../services/api';
-import './CreateForm.css';
+import { FaCamera, FaUpload, FaSpinner } from 'react-icons/fa';
+import './Forms.css';
 
 const CreateForm = () => {
-    const [formData, setFormData] = useState({
-        name: '',
-        age: '',
-        description: '',
-        location: '',
-        lastSeenDate: '',
-        contactInfo: '',
-        photo: null,
-        photoPreview: null,
-        photoUrl: null,
-        photoId: null
-    });
-
-    const [uploadingImage, setUploadingImage] = useState(false);
+    const navigate = useNavigate();
     const { currentUser } = useUserType();
-    const [errors, setErrors] = useState({});
+    const [formData, setFormData] = useState({
+        childName: '',
+        childAge: '',
+        childGender: 'male',
+        lastSeenDate: new Date().toISOString().split('T')[0],
+        lastSeenLocation: '',
+        description: '',
+        contactName: '',
+        contactPhone: '',
+        contactEmail: '',
+        additionalDetails: '',
+        identifyingFeatures: '',
+        status: 'active'
+    });
+    const [photoFile, setPhotoFile] = useState(null);
+    const [photoUrl, setPhotoUrl] = useState('');
+    const [photoId, setPhotoId] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadError, setUploadError] = useState('');
+    const [success, setSuccess] = useState(false);
 
-    const handleChange = async (e) => {
-        const { name, value, files } = e.target;
-        
-        if (name === 'photo' && files && files[0]) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                setFormData(prev => ({
-                    ...prev,
-                    photo: files[0],
-                    photoPreview: event.target.result
-                }));
-            };
-            reader.readAsDataURL(files[0]);
-
-            // Upload to Cloudinary
+    useEffect(() => {
+        // Verify Cloudinary connection when component mounts
+        const checkCloudinary = async () => {
             try {
-                setUploadingImage(true);
-                const response = await imageService.uploadImage(files[0], currentUser?.uid);
-                console.log('Cloudinary upload response:', response.data);
-                
-                if (response.data && response.data.success) {
-                    const cloudinaryUrl = response.data.url || response.data.secure_url;
-                    setFormData(prev => ({
-                        ...prev,
-                        photoId: response.data.fileId,
-                        photoUrl: cloudinaryUrl
-                    }));
-                    
-                    console.log('Image uploaded successfully to Cloudinary:', cloudinaryUrl);
-                } else {
-                    console.error('No success in response:', response.data);
-                    setErrors(prev => ({
-                        ...prev,
-                        photo: 'Failed to upload image. The form will still work with a local image.'
-                    }));
-                }
-            } catch (error) {
-                console.error('Error uploading image to Cloudinary:', error);
-                // Keep the local preview but show error message
-                setErrors(prev => ({
-                    ...prev,
-                    photo: 'Failed to upload image. The form will still work with a local image.'
-                }));
-            } finally {
-                setUploadingImage(false);
+                const status = await cloudinary.checkHealth();
+                console.log('Cloudinary health check:', status);
+            } catch (err) {
+                console.error('Cloudinary health check failed:', err);
+                setUploadError('Warning: Image upload service may be unavailable');
             }
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        }
+        };
+        
+        checkCloudinary();
+    }, []);
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prevData => ({ ...prevData, [name]: value }));
     };
 
-    console.log('Current User Auth State:', {
-      uid: currentUser?.uid,
-      isAnonymous: currentUser?.isAnonymous,
-      emailVerified: currentUser?.emailVerified
-    });
-
-    const validateForm = () => {
-        const newErrors = {};
-        if (!formData.name.trim()) newErrors.name = 'Name is required';
-        if (!formData.age || formData.age < 0 || formData.age > 18) newErrors.age = 'Valid age required (0-18)';
-        if (!formData.description.trim()) newErrors.description = 'Description is required';
-        if (!formData.location.trim()) newErrors.location = 'Location is required';
-        if (!formData.lastSeenDate) newErrors.lastSeenDate = 'Last seen date is required';
-        if (!formData.contactInfo.trim()) newErrors.contactInfo = 'Contact information is required';
-        return newErrors;
+    const handlePhotoChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            
+            // Reset previous uploads
+            setPhotoUrl('');
+            setPhotoId('');
+            setUploadProgress(0);
+            setUploadError('');
+            
+            // Create a preview URL
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                // Just store the file for upload during submission
+                setPhotoFile(file);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const validationErrors = validateForm();
-        if (Object.keys(validationErrors).length > 0) {
-            setErrors(validationErrors);
-            return;
-        }
+        setIsSubmitting(true);
+        setError('');
+        setUploadError('');
+        setSuccess(false);
 
         try {
-            const formWithUser = {
-                ...formData,
-                userId: currentUser?.uid,
-                createdAt: new Date().toISOString(),
-                status: 'pending'
-            };
-            
-            // Save to localStorage with form data including Cloudinary info
-            const existingForms = JSON.parse(localStorage.getItem('myForms')) || [];
-            const newForm = {
-              ...formWithUser,
-              id: `local_${Date.now()}`, // Unique local ID
-              photoPreview: formData.photoPreview, // Local preview
-              photoUrl: formData.photoUrl, // Cloudinary URL
-              photoId: formData.photoId, // Cloudinary ID
-              status: 'pending'
-            };
-            
-  
-
-            localStorage.setItem('myForms', JSON.stringify([...existingForms, newForm]));
-            
-            // Redirect to View My Enquiries after successful submission
-            window.location.href = '/my-enquiries';
-            
-            // Show styled success alert
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'form-alert success';
-            alertDiv.innerHTML = `
-              <div class="alert-content">
-                <span class="alert-icon">✓</span>
-                <div>
-                  <h3>Submission Successful!</h3>
-                  <p>Record ID: ${newForm.id}</p>
-                  <p>Thank you for your report.</p>
-                </div>
-              </div>
-            `;
-            document.body.appendChild(alertDiv);
-            
-            setTimeout(() => {
-              alertDiv.classList.add('fade-out');
-              setTimeout(() => alertDiv.remove(), 500);
-            }, 5000);
-            
-            // Reset form
-            setFormData({
-              name: '',
-              age: '',
-              description: '',
-              location: '',
-              lastSeenDate: '',
-              contactInfo: '',
-              photo: null,
-              photoPreview: null,
-              photoUrl: null,
-              photoId: null
-            });
-              
-            } catch (error) {
-              console.error('Submission Error:', error);
-              
-              // Create error alert element
-              const alertDiv = document.createElement('div');
-              alertDiv.className = 'form-alert error';
-              alertDiv.innerHTML = `
-                <div class="alert-content">
-                  <span class="alert-icon">✕</span>
-                  <div>
-                    <h3>Submission Failed</h3>
-                    <p>${error.message}</p>
-                    <p>Please try again.</p>
-                  </div>
-                </div>
-              `;
-              document.body.appendChild(alertDiv);
-              
-              // Remove alert after 5 seconds
-              setTimeout(() => {
-                alertDiv.classList.add('fade-out');
-                setTimeout(() => alertDiv.remove(), 500);
-              }, 5000);
+            // Validate form
+            if (!formData.childName || !formData.childAge || !formData.lastSeenLocation) {
+                throw new Error('Please fill in all required fields: Name, Age, and Last Seen Location');
             }
+
+            let imageData = null;
+
+            // Upload image if one was selected
+            if (photoFile) {
+                setUploadProgress(10);
+                console.log('Uploading image to Cloudinary...');
+                
+                try {
+                    // Upload to Cloudinary using our service
+                    const uploadResult = await imageService.uploadImage(photoFile, (progress) => {
+                        setUploadProgress(progress);
+                    });
+                    console.log('Image upload result:', uploadResult);
+                    
+                    if (uploadResult?.secure_url) {
+                        imageData = {
+                            url: uploadResult.secure_url,
+                            publicId: uploadResult.public_id
+                        };
+                        setPhotoUrl(uploadResult.secure_url);
+                        setPhotoId(uploadResult.public_id);
+                    } else {
+                        throw new Error('Image upload failed - missing URL');
+                    }
+                } catch (uploadErr) {
+                    console.error('Error uploading image:', uploadErr);
+                    setUploadError(`Image upload failed: ${uploadErr.message || 'Unknown error'}`);
+                    // Continue with form submission even if image upload fails
+                }
+            }
+
+            // Prepare form data for submission to database
+            const completeFormData = {
+                ...formData,
+                reporterUid: currentUser?.uid || '',
+                childImageId: imageData?.publicId || '',
+                photoUrl: imageData?.url || '',
+                photoId: imageData?.publicId || '',
+                // Fill in any missing required fields from the model
+                contactName: formData.contactName || currentUser?.displayName || 'Anonymous',
+                contactPhone: formData.contactPhone || currentUser?.phoneNumber || 'Not provided',
+                contactEmail: formData.contactEmail || currentUser?.email || 'Not provided',
+                childGender: formData.childGender || 'other',
+                createdAt: new Date().toISOString(),
+                lastUpdated: new Date().toISOString()
+            };
+
+            // Submit form to database
+            console.log('Submitting form to MongoDB:', completeFormData);
+            const response = await formService.createForm(completeFormData);
+            console.log('Form submission response:', response);
+
+            // Show success message
+            setSuccess(true);
+            
+            // Reset form after successful submission
+            setFormData({
+                childName: '',
+                childAge: '',
+                childGender: 'male',
+                lastSeenDate: new Date().toISOString().split('T')[0],
+                lastSeenLocation: '',
+                description: '',
+                contactName: '',
+                contactPhone: '',
+                contactEmail: '',
+                additionalDetails: '',
+                identifyingFeatures: '',
+                status: 'active'
+            });
+            setPhotoFile(null);
+            setPhotoUrl('');
+            setPhotoId('');
+            setUploadProgress(0);
+            
+            // Navigate after a short delay to show success message
+            setTimeout(() => {
+                navigate('/view');
+            }, 2000);
+            
+        } catch (err) {
+            console.error('Error submitting form:', err);
+            setError(err.message || 'Failed to submit form. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <div className="form-container">
-            <h2>Report a Lost Child</h2>
-            <form onSubmit={handleSubmit}>
-                <label htmlFor="name">Child's Name:</label>
-                <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                />
-                {errors.name && <span className="error">{errors.name}</span>}
-
-                <label htmlFor="age">Age:</label>
-                <input
-                    type="number"
-                    id="age"
-                    name="age"
-                    value={formData.age}
-                    onChange={handleChange}
-                    required
-                />
-                {errors.age && <span className="error">{errors.age}</span>}
-
-                <label htmlFor="description">Description:</label>
-                <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    required
-                />
-                {errors.description && <span className="error">{errors.description}</span>}
-
-                <label htmlFor="location">Last Seen Location:</label>
-                <input
-                    type="text"
-                    id="location"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    required
-                />
-                {errors.location && <span className="error">{errors.location}</span>}
-
-                <label htmlFor="lastSeenDate">Last Seen Date:</label>
-                <input
-                    type="date"
-                    id="lastSeenDate"
-                    name="lastSeenDate"
-                    value={formData.lastSeenDate}
-                    onChange={handleChange}
-                    required
-                />
-                {errors.lastSeenDate && <span className="error">{errors.lastSeenDate}</span>}
-
-                <label htmlFor="contactInfo">Contact Information:</label>
-                <input
-                    type="text"
-                    id="contactInfo"
-                    name="contactInfo"
-                    value={formData.contactInfo}
-                    onChange={handleChange}
-                    required
-                />
-                {errors.contactInfo && <span className="error">{errors.contactInfo}</span>}
-
-                <label htmlFor="photo">Upload Photo:</label>
-                <input
-                    type="file"
-                    id="photo"
-                    name="photo"
-                    onChange={handleChange}
-                    accept="image/*"
-                    disabled={uploadingImage}
-                />
-                {errors.photo && <span className="error">{errors.photo}</span>}
-                {uploadingImage && <span className="upload-status">Uploading image to cloud...</span>}
-
-                {formData.photoPreview && (
-                    <div className="file-upload-preview">
-                        <img src={formData.photoPreview} alt="Preview" />
-                        <p>Image Preview {formData.photoUrl ? '(Uploaded to Cloud)' : '(Local Only)'}</p>
+        <div className="content-container">
+            <div className="form-header">
+                <h2 className="page-title">Report Missing Child</h2>
+                <p className="form-subtitle">Please provide as much information as possible to help in the search.</p>
+            </div>
+            
+            {error && (
+                <div className="error-message">
+                    <strong>Error:</strong> {error}
+                </div>
+            )}
+            
+            {uploadError && (
+                <div className="error-message">
+                    <strong>Upload Error:</strong> {uploadError}
+                </div>
+            )}
+            
+            {success && (
+                <div className="success-message">
+                    <strong>Success!</strong> Your report has been submitted successfully. Redirecting...
+                </div>
+            )}
+            
+            <form onSubmit={handleSubmit} className="form-container">
+                <div className="form-section">
+                    <h3 className="section-title">Child Information</h3>
+                    
+                    <div className="form-field">
+                        <label htmlFor="childName">Child's Name <span className="required">*</span></label>
+                        <input
+                            type="text"
+                            id="childName"
+                            name="childName"
+                            value={formData.childName}
+                            onChange={handleInputChange}
+                            required
+                            placeholder="Enter child's full name"
+                            className="form-input"
+                        />
                     </div>
-                )}
-
-                <button type="submit">Submit Report</button>
+                    
+                    <div className="form-row">
+                        <div className="form-field">
+                            <label htmlFor="childAge">Child's Age <span className="required">*</span></label>
+                            <input
+                                type="number"
+                                id="childAge"
+                                name="childAge"
+                                value={formData.childAge}
+                                onChange={handleInputChange}
+                                required
+                                min="0"
+                                max="18"
+                                placeholder="Age in years"
+                                className="form-input"
+                            />
+                        </div>
+                        
+                        <div className="form-field">
+                            <label htmlFor="childGender">Child's Gender <span className="required">*</span></label>
+                            <select
+                                id="childGender"
+                                name="childGender"
+                                value={formData.childGender}
+                                onChange={handleInputChange}
+                                required
+                                className="form-input"
+                            >
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div className="form-field">
+                        <label htmlFor="lastSeenDate">Last Seen Date <span className="required">*</span></label>
+                        <input
+                            type="date"
+                            id="lastSeenDate"
+                            name="lastSeenDate"
+                            value={formData.lastSeenDate}
+                            onChange={handleInputChange}
+                            required
+                            className="form-input"
+                            max={new Date().toISOString().split('T')[0]}
+                        />
+                    </div>
+                    
+                    <div className="form-field">
+                        <label htmlFor="lastSeenLocation">Last Seen Location <span className="required">*</span></label>
+                        <input
+                            type="text"
+                            id="lastSeenLocation"
+                            name="lastSeenLocation"
+                            value={formData.lastSeenLocation}
+                            onChange={handleInputChange}
+                            required
+                            placeholder="Where was the child last seen? (City, Area, Landmark, etc.)"
+                            className="form-input"
+                        />
+                    </div>
+                    
+                    <div className="form-field">
+                        <label htmlFor="description">Description <span className="required">*</span></label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            required
+                            placeholder="Please provide details such as what the child was wearing, distinguishing features, circumstances of disappearance, etc."
+                            rows="4"
+                            className="form-textarea"
+                        />
+                        <p className="field-help">Include details about the child's appearance, clothing, and any other information that might help in identification.</p>
+                    </div>
+                    
+                    <div className="form-field">
+                        <label htmlFor="identifyingFeatures">Identifying Features</label>
+                        <textarea
+                            id="identifyingFeatures"
+                            name="identifyingFeatures"
+                            value={formData.identifyingFeatures}
+                            onChange={handleInputChange}
+                            placeholder="Any birthmarks, scars, or unique physical features that could help identify the child"
+                            rows="3"
+                            className="form-textarea"
+                        />
+                    </div>
+                </div>
+                
+                <div className="form-section">
+                    <h3 className="section-title">Contact Information</h3>
+                    
+                    <div className="form-field">
+                        <label htmlFor="contactName">Your Name <span className="required">*</span></label>
+                        <input
+                            type="text"
+                            id="contactName"
+                            name="contactName"
+                            value={formData.contactName}
+                            onChange={handleInputChange}
+                            required
+                            placeholder="Your full name"
+                            className="form-input"
+                        />
+                    </div>
+                    
+                    <div className="form-field">
+                        <label htmlFor="contactPhone">Your Phone Number <span className="required">*</span></label>
+                        <input
+                            type="tel"
+                            id="contactPhone"
+                            name="contactPhone"
+                            value={formData.contactPhone}
+                            onChange={handleInputChange}
+                            required
+                            placeholder="Your phone number"
+                            className="form-input"
+                        />
+                    </div>
+                    
+                    <div className="form-field">
+                        <label htmlFor="contactEmail">Your Email <span className="required">*</span></label>
+                        <input
+                            type="email"
+                            id="contactEmail"
+                            name="contactEmail"
+                            value={formData.contactEmail}
+                            onChange={handleInputChange}
+                            required
+                            placeholder="Your email address"
+                            className="form-input"
+                        />
+                        <p className="field-help">This information will be used by authorities to contact you if needed.</p>
+                    </div>
+                </div>
+                
+                <div className="form-section">
+                    <h3 className="section-title">Photo Upload</h3>
+                    
+                    <div className="form-field">
+                        <label htmlFor="photo">Upload Child's Photo</label>
+                        <div className="file-upload-container">
+                            <input
+                                type="file"
+                                id="photo"
+                                name="photo"
+                                accept="image/*"
+                                onChange={handlePhotoChange}
+                                className="file-input"
+                            />
+                            <button type="button" className="browse-button" onClick={() => document.getElementById('photo').click()}>
+                                <FaCamera className="icon" /> Choose Photo
+                            </button>
+                            <span className="file-name">{photoFile ? photoFile.name : 'No file selected'}</span>
+                        </div>
+                        <p className="field-help">
+                            Uploading a recent photo will help in identification. Max file size: 5MB.
+                        </p>
+                    </div>
+                    
+                    {uploadProgress > 0 && uploadProgress < 100 && (
+                        <div className="upload-progress">
+                            <div 
+                                className="progress-bar" 
+                                style={{ width: `${uploadProgress}%` }}
+                            ></div>
+                            <p>Uploading: {uploadProgress}%</p>
+                        </div>
+                    )}
+                    
+                    {photoUrl && (
+                        <div className="image-preview">
+                            <img src={photoUrl} alt="Preview" className="preview-image" />
+                            <p className="success-text">Image uploaded successfully!</p>
+                        </div>
+                    )}
+                </div>
+                
+                <div className="form-section">
+                    <h3 className="section-title">Additional Information</h3>
+                    
+                    <div className="form-field">
+                        <label htmlFor="additionalDetails">Additional Details</label>
+                        <textarea
+                            id="additionalDetails"
+                            name="additionalDetails"
+                            value={formData.additionalDetails}
+                            onChange={handleInputChange}
+                            placeholder="Any other information that might be helpful in the search"
+                            rows="3"
+                            className="form-textarea"
+                        />
+                    </div>
+                </div>
+                
+                <div className="form-actions">
+                    <button 
+                        type="submit" 
+                        className="submit-button"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <FaSpinner className="spinner-icon" />
+                                Submitting...
+                            </>
+                        ) : (
+                            <>
+                                <FaUpload className="icon" />
+                                Submit Report
+                            </>
+                        )}
+                    </button>
+                </div>
             </form>
         </div>
     );

@@ -6,6 +6,8 @@ const { getGfs } = require('../config/gridfs');
 // Create a new report
 const createReport = async (req, res) => {
   try {
+    console.log('Creating new report with data:', req.body);
+    
     const {
       reporterUid,
       childName,
@@ -19,6 +21,8 @@ const createReport = async (req, res) => {
       contactEmail,
       additionalDetails,
       identifyingFeatures,
+      photoUrl,
+      photoId,
       latitude,
       longitude
     } = req.body;
@@ -31,33 +35,40 @@ const createReport = async (req, res) => {
       });
     }
 
-    // Check if user exists
-    const user = await User.findOne({ uid: reporterUid });
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Reporter not found'
+    // Validate required fields
+    if (!childName || !childAge || !lastSeenLocation || !description) {
+      return res.status(400).json({
+        success: false, 
+        message: 'Missing required fields: childName, childAge, lastSeenLocation, and description are required'
       });
     }
 
-    // Check if childImageId was uploaded and passed
-    const childImageId = req.body.childImageId || null;
+    // Try to find user, but continue even if not found
+    let user;
+    try {
+      user = await User.findOne({ uid: reporterUid });
+    } catch (userErr) {
+      console.error('Error finding user:', userErr);
+      // Continue without user - don't stop report creation
+    }
 
     // Create a new report
     const newReport = new Report({
       reporterUid,
       childName,
-      childAge,
-      childGender,
-      lastSeenDate,
+      childAge: parseInt(childAge, 10), // Ensure it's a number
+      childGender: childGender || 'other',
+      lastSeenDate: lastSeenDate ? new Date(lastSeenDate) : new Date(),
       lastSeenLocation,
       description,
-      contactName,
-      contactPhone,
-      contactEmail,
-      childImageId,
+      contactName: contactName || 'Anonymous',
+      contactPhone: contactPhone || 'Not provided',
+      contactEmail: contactEmail || 'Not provided',
+      photoUrl: photoUrl || null, // Store Cloudinary URL directly
+      photoId: photoId || null, // Store Cloudinary public_id
       additionalDetails: additionalDetails || '',
       identifyingFeatures: identifyingFeatures || '',
+      status: 'active',
       location: {
         type: 'Point',
         coordinates: [longitude || 0, latitude || 0]
@@ -65,9 +76,18 @@ const createReport = async (req, res) => {
     });
 
     const savedReport = await newReport.save();
+    console.log('Report saved successfully:', savedReport._id);
     
-    // Update user report count
-    await user.incrementReportCount();
+    // Update user report count if user exists
+    if (user) {
+      try {
+        await user.incrementReportCount();
+        console.log('Updated report count for user:', reporterUid);
+      } catch (countErr) {
+        console.error('Error updating user report count:', countErr);
+        // Continue anyway - this is not critical
+      }
+    }
     
     res.status(201).json({
       success: true,
@@ -75,6 +95,7 @@ const createReport = async (req, res) => {
       message: 'Report created successfully'
     });
   } catch (error) {
+    console.error('Error creating report:', error);
     res.status(400).json({
       success: false,
       message: 'Error creating report',
