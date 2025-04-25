@@ -22,12 +22,32 @@ const NavBar = () => {
       logout();
       localStorage.removeItem('token');
       localStorage.removeItem('userType');
-      navigate('/login');
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
-
+  
+  const handleLogoClick = () => {
+    console.log('==== LOGO CLICKED ====');
+    console.log('Current location:', location.pathname);
+    console.log('Attempting navigation to role selection page...');
+    
+    // Set a flag to indicate this is an intentional navigation from navbar
+    sessionStorage.setItem('navbarRedirect', 'true');
+    console.log('Navigation flag set in sessionStorage:', sessionStorage.getItem('navbarRedirect'));
+    
+    // Try direct navigation
+    try {
+      navigate('/role-selection');
+      console.log('Navigation function called successfully');
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Fallback to window.location if React Router navigation fails
+      window.location.href = '/role-selection';
+    }
+  };
+  
   return (
     <nav style={{
       display: 'flex',
@@ -38,9 +58,21 @@ const NavBar = () => {
       borderBottom: '1px solid #e3e6f0'
     }}>
       <div className="logo">
-        <Link to="/" style={{ textDecoration: 'none', fontWeight: 'bold', fontSize: '1.5rem', color: '#4e73df' }}>
-          Lost & Found Children
-        </Link>
+        <button 
+          onClick={handleLogoClick} 
+          style={{ 
+            textDecoration: 'none', 
+            fontWeight: 'bold', 
+            fontSize: '1.5rem', 
+            color: '#4e73df',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer'
+          }}
+        >
+         Safe connect
+        </button>
       </div>
       
       <div style={{ display: 'flex', gap: '20px' }}>

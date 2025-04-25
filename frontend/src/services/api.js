@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:50001/api';
 
 // Create axios instance with configuration
 const api = axios.create({
@@ -289,6 +289,27 @@ export const formService = {
         console.error('Error deleting form from database:', error.response || error);
         throw error;
       });
+  },
+  
+  // Update form responses
+  updateFormResponses: (formId, responses) => {
+    console.log('Updating form responses in database:', { formId, responseCount: responses.length }, `${API_URL}/reports/${formId}`);
+    return axios.put(`${API_URL}/reports/${formId}`, { responses }, {
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => {
+      console.log('Form responses updated in database, response:', response);
+      window.dispatchEvent(new CustomEvent('formsUpdated', { 
+        detail: { source: 'responsesUpdate', formId, responses }
+      }));
+      return response.data;
+    })
+    .catch(error => {
+      console.error('Error updating form responses in database:', error.response || error);
+      throw error;
+    });
   },
   
   // Search forms

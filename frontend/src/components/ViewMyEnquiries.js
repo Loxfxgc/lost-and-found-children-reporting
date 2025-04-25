@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUserType } from '../UserTypeContext';
 import { imageService, formService } from '../services/api';
+import { FaTrash } from 'react-icons/fa';
 import './Forms.css';
 
 const ViewMyEnquiries = () => {
@@ -178,6 +179,45 @@ const ViewMyEnquiries = () => {
         return form.contactInfo || form.contactPhone || form.contactEmail || 'No contact info provided';
     };
 
+    // Add this new function for deleting responses
+    const handleDeleteResponse = async (formId, responseIndex) => {
+        try {
+            if (window.confirm('Are you sure you want to delete this response?')) {
+                // Show loading notification
+                showNotification('Processing', 'Deleting response...', 'info');
+                
+                // Find the form
+                const form = forms.find(f => (f._id || f.id) === formId);
+                if (!form || !form.responses) {
+                    throw new Error('Form or responses not found');
+                }
+                
+                // Create a new array of responses without the one to delete
+                const updatedResponses = [...form.responses];
+                updatedResponses.splice(responseIndex, 1);
+                
+                // Update the form in the database with the new responses array
+                await formService.updateFormResponses(formId, updatedResponses);
+                
+                // Update local state
+                const updatedForms = forms.map(f => {
+                    if ((f._id || f.id) === formId) {
+                        return { ...f, responses: updatedResponses };
+                    }
+                    return f;
+                });
+                
+                setForms(updatedForms);
+                
+                // Show success notification
+                showNotification('Success', 'Response deleted successfully.', 'success');
+            }
+        } catch (error) {
+            console.error('Error deleting response:', error);
+            showNotification('Error', 'Failed to delete response. Please try again.', 'error');
+        }
+    };
+
     useEffect(() => {
         console.log('ViewMyEnquiries mounting with currentUser:', currentUser);
         if (currentUser) {
@@ -243,6 +283,31 @@ const ViewMyEnquiries = () => {
                                 )}
                             </div>
                             
+                            {form.responses && form.responses.length > 0 && (
+                                <div className="responses-section">
+                                    <h4>Responses ({form.responses.length})</h4>
+                                    <div className="responses-list">
+                                        {form.responses.map((response, index) => (
+                                            <div key={index} className="response-card">
+                                                <div className="response-header">
+                                                    <p><strong>From:</strong> {response.responderName || 'Anonymous'}</p>
+                                                    <button 
+                                                        className="delete-response-button"
+                                                        onClick={() => handleDeleteResponse(form._id || form.id, index)}
+                                                        title="Delete Response"
+                                                    >
+                                                        <FaTrash />
+                                                    </button>
+                                                </div>
+                                                <p><strong>Message:</strong> {response.message}</p>
+                                                <p><strong>Contact:</strong> {response.contactInfo}</p>
+                                                <p><strong>Date:</strong> {new Date(response.timestamp).toLocaleString()}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
                             <div className="form-actions">
                                 {form.status === 'pending' && (
                                     <button 
@@ -259,22 +324,6 @@ const ViewMyEnquiries = () => {
                                     Delete
                                 </button>
                             </div>
-                            
-                            {form.responses && form.responses.length > 0 && (
-                                <div className="responses-section">
-                                    <h4>Responses ({form.responses.length})</h4>
-                                    <div className="responses-list">
-                                        {form.responses.map((response, index) => (
-                                            <div key={index} className="response-card">
-                                                <p><strong>From:</strong> {response.responderName || 'Anonymous'}</p>
-                                                <p><strong>Message:</strong> {response.message}</p>
-                                                <p><strong>Contact:</strong> {response.contactInfo}</p>
-                                                <p><strong>Date:</strong> {new Date(response.timestamp).toLocaleString()}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     ))}
                 </div>

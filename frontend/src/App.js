@@ -1,4 +1,4 @@
-  import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import { UserTypeProvider, useUserType } from './UserTypeContext';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -79,10 +79,48 @@ function RedirectHandler() {
       if (userType === 'searcher') {
         return <Navigate to="/enquire" replace />;
       }
+    } else {
+      // No userType, go to role selection only if not already there
+      return <Navigate to="/role-selection" replace />;
+    }
+  }
+  
+  // Special case: if user is trying to access role-selection directly but already has a role
+  if (isAuthenticated && location.pathname === '/role-selection') {
+    console.log('Role selection page accessed directly with auth:', isAuthenticated, 'userType:', userType);
+    
+    // Check if this is an intentional navigation from the navbar
+    const isNavbarNavigation = sessionStorage.getItem('navbarRedirect') === 'true';
+    const isInternalNavigation = document.referrer.includes(window.location.origin);
+    
+    console.log('Navigation source check:', {
+      isNavbarNavigation, 
+      isInternalNavigation,
+      navbarRedirect: sessionStorage.getItem('navbarRedirect'),
+      referrer: document.referrer
+    });
+    
+    // Don't auto-redirect if coming from navbar or internal navigation
+    if ((isNavbarNavigation || isInternalNavigation) && userType) {
+      console.log('Allowing role selection page to be viewed from intentional navigation');
+      // Clear the flag after using it
+      if (isNavbarNavigation) {
+        sessionStorage.removeItem('navbarRedirect');
+      }
+      return null;
     }
     
-    // No userType, go to role selection
-    return <Navigate to="/role-selection" replace />;
+    // Only redirect if they already have a user type and it's not an intentional navigation
+    if (userType && !isNavbarNavigation && !isInternalNavigation) {
+      console.log('User has role, redirecting from role selection to appropriate page');
+      if (userType === 'parent' && !hasReports) {
+        return <Navigate to="/create" replace />;
+      } else if (userType === 'parent' && hasReports) {
+        return <Navigate to="/my-enquiries" replace />;
+      } else if (userType === 'searcher') {
+        return <Navigate to="/enquire" replace />;
+      }
+    }
   }
   
   return null;
@@ -114,12 +152,12 @@ function AppContent() {
         <Route path="/" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/role-selection" />} />
         <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
         <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" />} />
-        <Route path="/role-selection" element={isAuthenticated ? <RoleSelection /> : <Navigate to="/login" />} />
-        <Route path="/create" element={isAuthenticated ? <CreateForm /> : <Navigate to="/login" />} />
-        <Route path="/view" element={isAuthenticated ? <ViewAllForms /> : <Navigate to="/login" />} />
-        <Route path="/enquire" element={isAuthenticated ? <EnquireForm /> : <Navigate to="/login" />} />
-        <Route path="/search" element={isAuthenticated ? <ViewAllForms filter="pending" /> : <Navigate to="/login" />} />
-        <Route path="/my-enquiries" element={isAuthenticated ? <ViewMyEnquiries /> : <Navigate to="/login" />} />
+        <Route path="/role-selection" element={isAuthenticated ? <RoleSelection /> : <Navigate to="/" />} />
+        <Route path="/create" element={isAuthenticated ? <CreateForm /> : <Navigate to="/" />} />
+        <Route path="/view" element={isAuthenticated ? <ViewAllForms /> : <Navigate to="/" />} />
+        <Route path="/enquire" element={isAuthenticated ? <EnquireForm /> : <Navigate to="/" />} />
+        <Route path="/search" element={isAuthenticated ? <ViewAllForms filter="pending" /> : <Navigate to="/" />} />
+        <Route path="/my-enquiries" element={isAuthenticated ? <ViewMyEnquiries /> : <Navigate to="/" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

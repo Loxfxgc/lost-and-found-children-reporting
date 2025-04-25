@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './Forms.css';
-import { FaSearch, FaRedo, FaEdit, FaTrash, FaThList, FaTh } from 'react-icons/fa';
+import { FaSearch, FaRedo, FaTrash, FaThList, FaTh } from 'react-icons/fa';
 import { formService } from '../services/api';
+import { useUserType } from '../UserTypeContext';
 
 const ViewAllForms = () => {
     const [forms, setForms] = useState([]);
@@ -12,6 +13,7 @@ const ViewAllForms = () => {
     const [error, setError] = useState(null);
     const [actionStatus, setActionStatus] = useState({ message: '', type: '' });
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+    const { userType } = useUserType();
 
     // Format date to readable format
     const formatDate = (dateString) => {
@@ -137,6 +139,19 @@ const ViewAllForms = () => {
 
     // Handle deleting a form
     const handleDeleteForm = async (id) => {
+        // Only allow parents to delete reports
+        if (userType !== 'parent') {
+            setActionStatus({ 
+                message: 'Only parents can delete reports.', 
+                type: 'error' 
+            });
+            
+            setTimeout(() => {
+                setActionStatus({ message: '', type: '' });
+            }, 3000);
+            return;
+        }
+
         try {
             if (window.confirm('Are you sure you want to delete this report?')) {
                 setActionStatus({ message: 'Deleting report...', type: 'info' });
@@ -173,20 +188,6 @@ const ViewAllForms = () => {
         setLoadingImages(prev => ({ ...prev, [id]: true }));
     };
     
-    // Helper function to safely display form field values
-    const displayValue = (value) => {
-        if (value === null || value === undefined) {
-            return 'Not provided';
-        }
-        
-        // If value is an object (like location), convert to string
-        if (typeof value === 'object') {
-            return JSON.stringify(value);
-        }
-        
-        return value;
-    };
-    
     // Helper function to get child name consistently
     const getChildName = (form) => {
         return form.childName || form.name || 'Unnamed';
@@ -221,6 +222,61 @@ const ViewAllForms = () => {
     // Helper function to get description
     const getDescription = (form) => {
         return form.description || 'No description provided';
+    };
+
+    // New function to handle response deletion
+    const handleDeleteResponse = async (formId, responseIndex) => {
+        // Only allow parents to delete responses
+        if (userType !== 'parent') {
+            setActionStatus({ 
+                message: 'Only parents can delete responses.', 
+                type: 'error' 
+            });
+            
+            setTimeout(() => {
+                setActionStatus({ message: '', type: '' });
+            }, 3000);
+            return;
+        }
+
+        try {
+            if (window.confirm('Are you sure you want to delete this response?')) {
+                setActionStatus({ message: 'Deleting response...', type: 'info' });
+                
+                // Find the form
+                const form = forms.find(f => (f._id || f.id) === formId);
+                if (!form || !form.responses) {
+                    throw new Error('Form or responses not found');
+                }
+                
+                // Create a new array of responses without the one to delete
+                const updatedResponses = [...form.responses];
+                updatedResponses.splice(responseIndex, 1);
+                
+                // Update the form in the database with the new responses array
+                await formService.updateFormResponses(formId, updatedResponses);
+                
+                // Update local state
+                const updatedForms = forms.map(f => {
+                    if ((f._id || f.id) === formId) {
+                        return { ...f, responses: updatedResponses };
+                    }
+                    return f;
+                });
+                
+                setForms(updatedForms);
+                setFilteredForms(updatedForms);
+                
+                setActionStatus({ message: 'Response deleted successfully.', type: 'success' });
+                
+                setTimeout(() => {
+                    setActionStatus({ message: '', type: '' });
+                }, 3000);
+            }
+        } catch (error) {
+            console.error('Error deleting response:', error);
+            setActionStatus({ message: 'Error deleting response.', type: 'error' });
+        }
     };
 
     return (
@@ -341,7 +397,7 @@ const ViewAllForms = () => {
                                         )}
                                         <img 
                                             src={form.photoUrl || form.imageUrl} 
-                                            alt={`Photo of ${getChildName(form)}`} 
+                                            alt={`Child ${getChildName(form)}`} 
                                             onLoad={() => handleImageLoad(form._id || form.id)}
                                             onError={() => handleImageError(form._id || form.id)}
                                             onLoadStart={() => handleImageStart(form._id || form.id)}
@@ -363,6 +419,17 @@ const ViewAllForms = () => {
                                                 <div className="response-header">
                                                     <span className="responder-name">{response.name}</span>
                                                     <span className="response-date">{formatDate(response.date)}</span>
+                                                    
+                                                    {/* Only show delete button for parent users */}
+                                                    {userType === 'parent' && (
+                                                        <button 
+                                                            className="delete-response-button"
+                                                            onClick={() => handleDeleteResponse(form._id || form.id, index)}
+                                                            title="Delete Response"
+                                                        >
+                                                            <FaTrash />
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <p className="response-message">{response.message}</p>
                                                 {response.contact && (
@@ -388,12 +455,16 @@ const ViewAllForms = () => {
                                     <option value="found">Found</option>
                                     <option value="active">Active</option>
                                 </select>
-                                <button 
-                                    className="delete-button"
-                                    onClick={() => handleDeleteForm(form._id || form.id)}
-                                >
-                                    <FaTrash /> Delete
-                                </button>
+                                
+                                {/* Only show delete button for parent users */}
+                                {userType === 'parent' && (
+                                    <button 
+                                        className="delete-button"
+                                        onClick={() => handleDeleteForm(form._id || form.id)}
+                                    >
+                                        <FaTrash /> Delete
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))
