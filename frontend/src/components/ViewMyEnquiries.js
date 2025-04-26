@@ -1,16 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUserType } from '../UserTypeContext';
 import { imageService, formService } from '../services/api';
-import { FaTrash } from 'react-icons/fa';
+import { FaTrash, FaEdit, FaEye, FaPencilAlt, FaPlus, FaCheck, FaSearch, FaTimesCircle, FaTimes } from 'react-icons/fa';
+import EditFormModal from './EditFormModal';
 import './Forms.css';
 
 const ViewMyEnquiries = () => {
+    const navigate = useNavigate();
     const [forms, setForms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { currentUser } = useUserType();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [formToDelete, setFormToDelete] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [formToEdit, setFormToEdit] = useState(null);
+    const [viewType, setViewType] = useState('grid');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filteredForms, setFilteredForms] = useState([]);
+    const [statusFilter, setStatusFilter] = useState('all');
 
     const handleMarkFound = async (formId) => {
         try {
@@ -30,22 +39,34 @@ const ViewMyEnquiries = () => {
 
     const showNotification = (title, message, type = 'success') => {
         const alertDiv = document.createElement('div');
-        alertDiv.className = `form-alert ${type}`;
+        alertDiv.className = `alert alert-${type}`;
         alertDiv.innerHTML = `
-          <div class="alert-content">
-            <span class="alert-icon">${type === 'success' ? '✓' : '✕'}</span>
-            <div>
-              <h3>${title}</h3>
-              <p>${message}</p>
-            </div>
-          </div>
+          ${message}
+          <button class="close-alert">&times;</button>
         `;
-        document.body.appendChild(alertDiv);
         
+        // Add to DOM
+        const container = document.querySelector('.content-container');
+        if (container) {
+            container.insertBefore(alertDiv, container.firstChild);
+        } else {
+            document.body.appendChild(alertDiv);
+        }
+        
+        // Add click event to close button
+        const closeBtn = alertDiv.querySelector('.close-alert');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                alertDiv.remove();
+            });
+        }
+        
+        // Auto-dismiss after 5 seconds
         setTimeout(() => {
-          alertDiv.classList.add('fade-out');
-          setTimeout(() => alertDiv.remove(), 500);
-        }, 3000);
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
     };
 
     const confirmDeleteForm = (formId) => {
@@ -98,6 +119,38 @@ const ViewMyEnquiries = () => {
         setFormToDelete(null);
     };
 
+    const openEditModal = (formId) => {
+        const formData = forms.find(form => (form._id || form.id) === formId);
+        if (formData) {
+            setFormToEdit(formData);
+            setShowEditModal(true);
+        } else {
+            showNotification('Error', 'Form data not found', 'error');
+        }
+    };
+
+    const closeEditModal = () => {
+        setShowEditModal(false);
+        setFormToEdit(null);
+    };
+
+    const handleFormUpdated = (updatedForm) => {
+        // Update the local forms array with the updated form
+        const updatedForms = forms.map(form => {
+            const formId = form._id || form.id;
+            const updatedFormId = updatedForm._id || updatedForm.id;
+            
+            if (formId === updatedFormId) {
+                return { ...form, ...updatedForm };
+            }
+            return form;
+        });
+        
+        setForms(updatedForms);
+        setFilteredForms(applyFilters(updatedForms, searchTerm, statusFilter));
+        showNotification('Success', 'Form updated successfully!', 'success');
+    };
+
     const fetchForms = useCallback(async () => {
         if (!currentUser?.uid) {
             console.log('No currentUser.uid available, skipping form fetch');
@@ -117,20 +170,23 @@ const ViewMyEnquiries = () => {
             // If we got forms, show them
             if (myForms && myForms.length > 0) {
                 setForms(myForms);
+                setFilteredForms(applyFilters(myForms, searchTerm, statusFilter));
                 setError(null);
             } else {
                 // No forms found in the database
                 setForms([]);
+                setFilteredForms([]);
                 setError('You have not submitted any reports yet.');
             }
         } catch (err) {
             console.error('Error fetching forms:', err);
             setError('Failed to load your reports. Please try again later.');
             setForms([]);
+            setFilteredForms([]);
         } finally {
             setLoading(false);
         }
-    }, [currentUser]);
+    }, [currentUser, searchTerm, statusFilter]);
     
     // Helper function to get the best image URL
     const getImageUrl = (form) => {
@@ -179,6 +235,11 @@ const ViewMyEnquiries = () => {
         return form.contactInfo || form.contactPhone || form.contactEmail || 'No contact info provided';
     };
 
+    // Helper function to get identifying features
+    const getIdentifyingFeatures = (form) => {
+        return form.identifyingFeatures || 'None specified';
+    };
+
     // Add this new function for deleting responses
     const handleDeleteResponse = async (formId, responseIndex) => {
         try {
@@ -208,6 +269,7 @@ const ViewMyEnquiries = () => {
                 });
                 
                 setForms(updatedForms);
+                setFilteredForms(applyFilters(updatedForms, searchTerm, statusFilter));
                 
                 // Show success notification
                 showNotification('Success', 'Response deleted successfully.', 'success');
@@ -216,6 +278,70 @@ const ViewMyEnquiries = () => {
             console.error('Error deleting response:', error);
             showNotification('Error', 'Failed to delete response. Please try again.', 'error');
         }
+    };
+
+    // Function to handle status update
+    const handleStatusChange = async (formId, newStatus) => {
+        try {
+            await formService.updateFormStatus(formId, newStatus);
+            
+            // Update local state
+            const updatedForms = forms.map(form => {
+                if ((form._id || form.id) === formId) {
+                    return { ...form, status: newStatus };
+                }
+                return form;
+            });
+            
+            setForms(updatedForms);
+            setFilteredForms(applyFilters(updatedForms, searchTerm, statusFilter));
+            
+            showNotification('Status Updated', `Report status changed to ${newStatus}.`, 'success');
+        } catch (error) {
+            console.error('Error updating status:', error);
+            showNotification('Error', 'Failed to update status. Please try again.', 'error');
+        }
+    };
+
+    // Handle search input change
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        setFilteredForms(applyFilters(forms, value, statusFilter));
+    };
+
+    // Handle status filter change
+    const handleStatusFilterChange = (e) => {
+        const value = e.target.value;
+        setStatusFilter(value);
+        setFilteredForms(applyFilters(forms, searchTerm, value));
+    };
+
+    // Apply filters to forms array
+    const applyFilters = (formsArray, search, status) => {
+        let result = [...formsArray];
+        
+        // Apply search term filter
+        if (search) {
+            const searchLower = search.toLowerCase();
+            result = result.filter(form => 
+                getName(form).toLowerCase().includes(searchLower) ||
+                getDescription(form).toLowerCase().includes(searchLower) ||
+                getLocation(form).toLowerCase().includes(searchLower)
+            );
+        }
+        
+        // Apply status filter
+        if (status && status !== 'all') {
+            result = result.filter(form => form.status === status);
+        }
+        
+        return result;
+    };
+
+    // Add a report
+    const handleAddReport = () => {
+        navigate('/create');
     };
 
     useEffect(() => {
@@ -235,22 +361,88 @@ const ViewMyEnquiries = () => {
 
     return (
         <div className="content-container">
-            <h2 className="page-title">My Enquiries</h2>
+            <h2 className="page-title">My Reports</h2>
             
-            {error && <div className="error-message">{error}</div>}
+            {error && <div className="alert alert-danger">{error}</div>}
+            
+            <div className="filter-container">
+                <div className="search-input">
+                    <FaSearch className="search-icon" />
+                    <input 
+                        type="text" 
+                        placeholder="Search by name, description or location..." 
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                    />
+                </div>
+                
+                <div className="filter-controls">
+                    <div className="status-filter">
+                        <label htmlFor="statusFilter">Status:</label>
+                        <select 
+                            id="statusFilter" 
+                            value={statusFilter}
+                            onChange={handleStatusFilterChange}
+                        >
+                            <option value="all">All Reports</option>
+                            <option value="active">Active</option>
+                            <option value="investigating">Investigating</option>
+                            <option value="found">Found</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    
+                    <div className="view-toggle">
+                        <button 
+                            className={`view-button ${viewType === 'grid' ? 'active' : ''}`}
+                            onClick={() => setViewType('grid')}
+                            title="Grid View"
+                        >
+                            <i className="grid-icon">⊞</i>
+                        </button>
+                        <button 
+                            className={`view-button ${viewType === 'list' ? 'active' : ''}`}
+                            onClick={() => setViewType('list')}
+                            title="List View"
+                        >
+                            <i className="list-icon">≡</i>
+                        </button>
+                    </div>
+                    
+                    <button 
+                        className="submit-button add-form-button"
+                        onClick={handleAddReport}
+                    >
+                        <FaPlus /> New Report
+                    </button>
+                </div>
+            </div>
             
             {loading ? (
                 <div className="loading-container">
                     <div className="loading-spinner"></div>
-                    <p>Loading your forms...</p>
+                    <p>Loading your reports...</p>
                 </div>
-            ) : forms.length === 0 ? (
-                <div className="no-forms">
-                    <p>You haven't submitted any enquiries yet.</p>
+            ) : filteredForms.length === 0 ? (
+                <div className="no-results">
+                    <FaSearch size={48} color="#aaa" />
+                    <p>No reports found</p>
+                    <p>
+                        {searchTerm || statusFilter !== 'all' 
+                            ? 'Try adjusting your search or filters' 
+                            : 'You haven\'t submitted any reports yet'}
+                    </p>
+                    <button 
+                        className="submit-button add-form-button"
+                        onClick={handleAddReport}
+                        style={{ marginTop: '20px' }}
+                    >
+                        <FaPlus /> Create New Report
+                    </button>
                 </div>
             ) : (
-                <div className="forms-list">
-                    {forms.map(form => (
+                <div className={`forms-container ${viewType}-view`}>
+                    {filteredForms.map(form => (
                         <div key={form._id || form.id} className="form-card">
                             <div className="form-header">
                                 <h3>{getName(form)}, {getAge(form)}</h3>
@@ -258,29 +450,74 @@ const ViewMyEnquiries = () => {
                             </div>
                             
                             <div className="form-content">
-                                <div className="form-details">
-                                    <p><strong>Description:</strong> {getDescription(form)}</p>
-                                    <p><strong>Last seen:</strong> {getLocation(form)} on {new Date(getLastSeenDate(form)).toLocaleDateString()}</p>
-                                    <p><strong>Contact:</strong> {getContactInfo(form)}</p>
-                                    <p><strong>Created:</strong> {new Date(form.createdAt).toLocaleString()}</p>
-                                    {form.status === 'found' && (
-                                        <p><strong>Found at:</strong> {new Date(form.foundAt).toLocaleString()}</p>
-                                    )}
-                                </div>
-                                
-                                {(form.photoPreview || form.photoUrl || form.childImageId || form.photoId) && (
-                                    <div className="form-image-container">
+                                {getImageUrl(form) && (
+                                    <div className="form-image">
                                         <img 
-                                            src={getImageUrl(form)}
-                                            alt="Child"
-                                            className="form-photo"
-                                            onError={(e) => {
-                                                if (form.photoPreview) e.target.src = form.photoPreview;
-                                                else e.target.style.display = 'none';
-                                            }}
+                                            src={getImageUrl(form)} 
+                                            alt={`Photo of ${getName(form)}`} 
+                                            onError={(e) => e.target.src = `${process.env.PUBLIC_URL}/placeholder.png`}
                                         />
                                     </div>
                                 )}
+                                
+                                <div className="form-details">
+                                    <div className="detail-row">
+                                        <span className="detail-label">Description</span>
+                                        <span className="detail-value">{getDescription(form)}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Last Seen</span>
+                                        <span className="detail-value">{getLocation(form)}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Date</span>
+                                        <span className="detail-value">{new Date(getLastSeenDate(form)).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Contact</span>
+                                        <span className="detail-value">{getContactInfo(form)}</span>
+                                    </div>
+                                    
+                                    <div className="detail-row full-width">
+                                        <span className="detail-label">Identifying Features</span>
+                                        <span className="detail-value">{getIdentifyingFeatures(form)}</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="dates-row">
+                                    <span><strong>Created:</strong> {new Date(form.createdAt).toLocaleDateString()}</span>
+                                    <span><strong>Updated:</strong> {new Date(form.updatedAt || form.createdAt).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                            
+                            <div className="form-actions">
+                                <select 
+                                    className="status-dropdown"
+                                    value={form.status}
+                                    onChange={(e) => handleStatusChange(form._id || form.id, e.target.value)}
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="investigating">Investigating</option>
+                                    <option value="found">Found</option>
+                                    <option value="closed">Closed</option>
+                                </select>
+                                
+                                <div className="action-buttons">
+                                    <button 
+                                        className="action-button edit-button"
+                                        onClick={() => openEditModal(form._id || form.id)}
+                                        title="Edit Report"
+                                    >
+                                        <FaEdit />
+                                    </button>
+                                    <button 
+                                        className="action-button delete-button"
+                                        onClick={() => confirmDeleteForm(form._id || form.id)}
+                                        title="Delete Report"
+                                    >
+                                        <FaTrash /> Delete
+                                    </button>
+                                </div>
                             </div>
                             
                             {form.responses && form.responses.length > 0 && (
@@ -296,7 +533,7 @@ const ViewMyEnquiries = () => {
                                                         onClick={() => handleDeleteResponse(form._id || form.id, index)}
                                                         title="Delete Response"
                                                     >
-                                                        <FaTrash />
+                                                        <FaTimesCircle />
                                                     </button>
                                                 </div>
                                                 <p><strong>Message:</strong> {response.message}</p>
@@ -307,50 +544,42 @@ const ViewMyEnquiries = () => {
                                     </div>
                                 </div>
                             )}
-                            
-                            <div className="form-actions">
-                                {form.status === 'pending' && (
-                                    <button 
-                                        className="mark-found-button"
-                                        onClick={() => handleMarkFound(form._id || form.id)}
-                                    >
-                                        Mark as Found
-                                    </button>
-                                )}
-                                <button 
-                                    className="delete-form-button"
-                                    onClick={() => confirmDeleteForm(form._id || form.id)}
-                                >
-                                    Delete
-                                </button>
-                            </div>
                         </div>
                     ))}
                 </div>
             )}
             
             {showDeleteModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h3>Delete Form</h3>
-                        <p>Are you sure you want to delete the form for {formToDelete.name}?</p>
-                        <p>This action cannot be undone.</p>
-                        <div className="modal-actions">
-                            <button 
-                                className="cancel-button"
-                                onClick={closeDeleteModal}
-                            >
-                                Cancel
+                <div className="form-detail-modal">
+                    <div className="form-detail-modal-content">
+                        <div className="modal-header">
+                            <h3>Confirm Deletion</h3>
+                            <button className="modal-close-button" onClick={closeDeleteModal}>
+                                <FaTimes />
                             </button>
-                            <button 
-                                className="delete-button"
-                                onClick={handleDeleteForm}
-                            >
-                                Delete
+                        </div>
+                        <div className="modal-content">
+                            <p>Are you sure you want to delete the report for <strong>{formToDelete ? getName(formToDelete) : 'this child'}</strong>?</p>
+                            <p>This action cannot be undone and will permanently remove all information about this report, including any responses received.</p>
+                        </div>
+                        <div className="modal-actions">
+                            <button className="cancel-button" onClick={closeDeleteModal}>
+                                <FaTimes /> Cancel
+                            </button>
+                            <button className="delete-button" onClick={handleDeleteForm}>
+                                <FaTrash /> Delete Report
                             </button>
                         </div>
                     </div>
                 </div>
+            )}
+            
+            {showEditModal && formToEdit && (
+                <EditFormModal 
+                    form={formToEdit} 
+                    onClose={closeEditModal} 
+                    onSuccess={handleFormUpdated} 
+                />
             )}
         </div>
     );

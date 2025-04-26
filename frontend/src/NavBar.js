@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { auth } from './services/firebase';
 import { signOut } from 'firebase/auth';
 import { useAuth } from './services/authService';
 import { useUserType } from './UserTypeContext';
+import LogoutButton from './components/LogoutButton';
 
 const NavBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
   const { userType } = useUserType();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
   
   // Don't show navbar on login/register pages
   if (['/login', '/register'].includes(location.pathname)) {
@@ -18,34 +21,60 @@ const NavBar = () => {
 
   const handleLogout = async () => {
     try {
+      setIsLoggingOut(true);
+      
+      // Add a small delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       await signOut(auth);
       logout();
       localStorage.removeItem('token');
       localStorage.removeItem('userType');
-      navigate('/');
+      
+      // Add transition effect before navigation
+      document.body.classList.add('fade-out');
+      
+      // Wait for transition to complete before navigating
+      setTimeout(() => {
+        navigate('/');
+        // Remove the class after navigation
+        setTimeout(() => {
+          document.body.classList.remove('fade-out');
+          setIsLoggingOut(false);
+        }, 300);
+      }, 300);
     } catch (error) {
       console.error('Logout error:', error);
+      setIsLoggingOut(false);
     }
   };
   
   const handleLogoClick = () => {
+    // Set a flag to indicate this is an intentional navigation to change roles
+    sessionStorage.setItem('navbarRedirect', 'true');
+    sessionStorage.setItem('changeRole', 'true');
+    
     console.log('==== LOGO CLICKED ====');
     console.log('Current location:', location.pathname);
-    console.log('Attempting navigation to role selection page...');
+    console.log('Current user type:', userType);
+    console.log('Navigating to role selection page to change role...');
     
-    // Set a flag to indicate this is an intentional navigation from navbar
-    sessionStorage.setItem('navbarRedirect', 'true');
-    console.log('Navigation flag set in sessionStorage:', sessionStorage.getItem('navbarRedirect'));
+    // Apply transition effect
+    document.body.classList.add('fade-out');
     
-    // Try direct navigation
-    try {
-      navigate('/role-selection');
-      console.log('Navigation function called successfully');
-    } catch (error) {
-      console.error('Navigation error:', error);
-      // Fallback to window.location if React Router navigation fails
-      window.location.href = '/role-selection';
-    }
+    // Navigate to role selection with slight delay for animation
+    setTimeout(() => {
+      try {
+        navigate('/role-selection');
+        setTimeout(() => {
+          document.body.classList.remove('fade-out');
+        }, 300);
+      } catch (error) {
+        console.error('Navigation error:', error);
+        // Fallback to direct location change if needed
+        window.location.href = '/role-selection';
+      }
+    }, 300);
   };
   
   return (
@@ -57,9 +86,11 @@ const NavBar = () => {
       backgroundColor: '#f8f9fa',
       borderBottom: '1px solid #e3e6f0'
     }}>
-      <div className="logo">
+      <div className="logo" style={{ position: 'relative' }}>
         <button 
           onClick={handleLogoClick} 
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
           style={{ 
             textDecoration: 'none', 
             fontWeight: 'bold', 
@@ -70,9 +101,28 @@ const NavBar = () => {
             padding: 0,
             cursor: 'pointer'
           }}
+          aria-label="Change role"
         >
          Safe connect
         </button>
+        
+        {showTooltip && (
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: '0',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '5px 10px',
+            borderRadius: '4px',
+            fontSize: '0.75rem',
+            marginTop: '5px',
+            zIndex: 100,
+            whiteSpace: 'nowrap'
+          }}>
+            Click to change your role
+          </div>
+        )}
       </div>
       
       <div style={{ display: 'flex', gap: '20px' }}>
@@ -109,18 +159,7 @@ const NavBar = () => {
           </>
         )}
         
-        <button 
-          onClick={handleLogout}
-          style={{
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: '#e74a3b',
-            cursor: 'pointer',
-            fontSize: '1rem'
-          }}
-        >
-          Logout
-        </button>
+        <LogoutButton isLoggingOut={isLoggingOut} onLogout={handleLogout} />
       </div>
     </nav>
   );

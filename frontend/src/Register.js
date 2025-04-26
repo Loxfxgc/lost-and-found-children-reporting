@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth } from './services/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useNavigate, Link } from 'react-router-dom';
@@ -12,6 +12,13 @@ const Register = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [formVisible, setFormVisible] = useState(false);
+
+    // Animation effect when component mounts
+    useEffect(() => {
+        // Slight delay for better visual effect
+        setTimeout(() => setFormVisible(true), 100);
+    }, []);
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -71,119 +78,223 @@ const Register = () => {
     };
 
     return (
-        <div style={{ 
-            maxWidth: '400px', 
-            margin: '50px auto', 
-            padding: '20px', 
-            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-            borderRadius: '5px'
+        <div className="register-container" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            padding: '20px',
+            backgroundColor: '#f8f9fa'
         }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Register</h2>
-            
-            {error && (
-                <div style={{ 
-                    backgroundColor: '#f8d7da', 
-                    color: '#721c24', 
-                    padding: '10px', 
-                    borderRadius: '4px',
-                    marginBottom: '20px'
+            <div className={`register-card ${formVisible ? 'visible' : ''}`} style={{
+                width: '100%',
+                maxWidth: '360px',
+                backgroundColor: 'white',
+                borderRadius: '8px',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+                padding: '28px',
+                transition: 'all 0.4s ease-in-out',
+                opacity: formVisible ? 1 : 0,
+                transform: formVisible ? 'translateY(0)' : 'translateY(20px)',
+            }}>
+                <div className="register-header" style={{
+                    textAlign: 'center',
+                    marginBottom: '24px'
                 }}>
-                    {error}
-                </div>
-            )}
-            
-            <form onSubmit={handleRegister}>
-                <div style={{ marginBottom: '15px' }}>
-                    <label htmlFor="name" style={{ display: 'block', marginBottom: '5px' }}>Full Name</label>
-                    <input
-                        id="name"
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        style={{ 
-                            width: '100%', 
-                            padding: '10px', 
-                            borderRadius: '4px',
-                            border: '1px solid #ced4da'
-                        }}
-                    />
+                    <h1 style={{
+                        fontSize: '22px',
+                        fontWeight: '600',
+                        color: '#333',
+                        margin: '0 0 8px 0'
+                    }}>Create Account</h1>
+                    <p style={{
+                        fontSize: '14px',
+                        color: '#777',
+                        margin: 0
+                    }}>Join Safe Connect today</p>
                 </div>
                 
-                <div style={{ marginBottom: '15px' }}>
-                    <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>Email</label>
-                    <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        style={{ 
-                            width: '100%', 
-                            padding: '10px', 
-                            borderRadius: '4px',
-                            border: '1px solid #ced4da'
-                        }}
-                    />
-                </div>
-                
-                <div style={{ marginBottom: '15px' }}>
-                    <label htmlFor="password" style={{ display: 'block', marginBottom: '5px' }}>Password</label>
-                    <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        style={{ 
-                            width: '100%', 
-                            padding: '10px', 
-                            borderRadius: '4px',
-                            border: '1px solid #ced4da'
-                        }}
-                    />
-                    <small style={{ color: '#6c757d', fontSize: '0.8rem' }}>
-                        Password must be at least 6 characters
-                    </small>
-                </div>
-                
-                <div style={{ marginBottom: '15px' }}>
-                    <label htmlFor="confirmPassword" style={{ display: 'block', marginBottom: '5px' }}>Confirm Password</label>
-                    <input
-                        id="confirmPassword"
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        style={{ 
-                            width: '100%', 
-                            padding: '10px', 
-                            borderRadius: '4px',
-                            border: '1px solid #ced4da'
-                        }}
-                    />
-                </div>
-                
-                <button
-                    type="submit"
-                    disabled={loading}
-                    style={{ 
-                        width: '100%', 
-                        padding: '10px', 
-                        backgroundColor: '#4e73df', 
-                        color: 'white',
-                        border: 'none',
+                {error && (
+                    <div className="error-alert" style={{
+                        backgroundColor: '#fff0f0',
+                        color: '#e53935',
+                        padding: '10px 12px',
                         borderRadius: '4px',
-                        cursor: loading ? 'not-allowed' : 'pointer',
-                        opacity: loading ? 0.7 : 1
-                    }}
-                >
-                    {loading ? 'Registering...' : 'Register'}
-                </button>
-            </form>
-            
-            <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                Already have an account? <Link to="/login" style={{ color: '#4e73df' }}>Login here</Link>
+                        marginBottom: '16px',
+                        fontSize: '13px',
+                        animation: 'shake 0.5s'
+                    }}>
+                        {error}
+                    </div>
+                )}
+                
+                <form onSubmit={handleRegister}>
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                        <label htmlFor="name" style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: '13px',
+                            color: '#666'
+                        }}>Full Name</label>
+                        <input
+                            id="name"
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                            style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: '14px',
+                                borderRadius: '20px',
+                                border: '1px solid #e0e0e0',
+                                outline: 'none',
+                                transition: 'border 0.2s, box-shadow 0.2s',
+                                boxSizing: 'border-box'
+                            }}
+                            placeholder="Enter your full name"
+                        />
+                    </div>
+                    
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                        <label htmlFor="email" style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: '13px',
+                            color: '#666'
+                        }}>Email</label>
+                        <input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: '14px',
+                                borderRadius: '20px',
+                                border: '1px solid #e0e0e0',
+                                outline: 'none',
+                                transition: 'border 0.2s, box-shadow 0.2s',
+                                boxSizing: 'border-box'
+                            }}
+                            placeholder="Enter your email"
+                        />
+                    </div>
+                    
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                        <label htmlFor="password" style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: '13px',
+                            color: '#666'
+                        }}>Password</label>
+                        <input
+                            id="password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: '14px',
+                                borderRadius: '20px',
+                                border: '1px solid #e0e0e0',
+                                outline: 'none',
+                                transition: 'border 0.2s, box-shadow 0.2s',
+                                boxSizing: 'border-box'
+                            }}
+                            placeholder="Create a password"
+                        />
+                        <small style={{ 
+                            color: '#888', 
+                            fontSize: '12px', 
+                            display: 'block',
+                            marginTop: '4px',
+                            marginLeft: '4px'
+                        }}>
+                            Password must be at least 6 characters
+                        </small>
+                    </div>
+                    
+                    <div className="form-group" style={{ marginBottom: '20px' }}>
+                        <label htmlFor="confirmPassword" style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: '13px',
+                            color: '#666'
+                        }}>Confirm Password</label>
+                        <input
+                            id="confirmPassword"
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
+                            style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: '14px',
+                                borderRadius: '20px',
+                                border: '1px solid #e0e0e0',
+                                outline: 'none',
+                                transition: 'border 0.2s, box-shadow 0.2s',
+                                boxSizing: 'border-box'
+                            }}
+                            placeholder="Confirm your password"
+                        />
+                    </div>
+                    
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="register-button"
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            backgroundColor: '#3f51b5',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s ease',
+                            position: 'relative'
+                        }}
+                    >
+                        {loading ? (
+                            <span className="spinner" style={{
+                                display: 'inline-block',
+                                width: '16px',
+                                height: '16px',
+                                border: '2px solid rgba(255, 255, 255, 0.3)',
+                                borderTopColor: 'white',
+                                borderRadius: '50%',
+                                animation: 'spin 0.8s linear infinite'
+                            }}></span>
+                        ) : 'Create Account'}
+                    </button>
+                </form>
+                
+                <div className="login-link" style={{
+                    textAlign: 'center',
+                    marginTop: '16px',
+                    fontSize: '13px',
+                    color: '#777'
+                }}>
+                    Already have an account? <Link to="/login" style={{
+                        color: '#3f51b5',
+                        textDecoration: 'none',
+                        fontWeight: '500'
+                    }}>Sign In</Link>
+                </div>
             </div>
         </div>
     );

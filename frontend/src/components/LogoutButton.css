@@ -1,0 +1,148 @@
+.logout-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  color: #333;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  gap: 8px;
+  border-radius: 4px;
+  position: relative;
+}
+
+.logout-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.door-icon {
+  width: 24px;
+  height: 24px;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.door-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 24px;
+  border: 2px solid #333;
+  border-right: none;
+  box-sizing: border-box;
+}
+
+.door {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 14px;
+  height: 24px;
+  background-color: #333;
+  transform-origin: right center;
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.doorknob {
+  position: absolute;
+  top: 12px;
+  right: 3px;
+  width: 4px;
+  height: 4px;
+  background-color: #fff;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.arrow {
+  position: absolute;
+  top: 10px;
+  left: -12px;
+  width: 16px;
+  height: 2px;
+  background-color: #333;
+  z-index: 1;
+  transform-origin: right center;
+}
+
+.arrow:before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 8px;
+  height: 2px;
+  background-color: #333;
+  transform: rotate(45deg);
+  transform-origin: left center;
+}
+
+.arrow:after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: 8px;
+  height: 2px;
+  background-color: #333;
+  transform: rotate(-45deg);
+  transform-origin: left center;
+}
+
+/* Animation class */
+.logout-button.animating .door {
+  transform: perspective(100px) rotateY(-80deg);
+}
+
+.logout-button.animating .arrow {
+  animation: arrowMove 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes arrowMove {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(8px);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+
+/* Position in header */
+.app-header .logout-button {
+  margin-left: auto;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .logout-text {
+    display: none;
+  }
+  
+  .logout-button {
+    padding: 8px;
+  }
+}
+
+/* Hover effects */
+.logout-button:hover .door {
+  transform: perspective(100px) rotateY(-15deg);
+}
+
+.logout-button:hover .arrow {
+  transform: translateX(2px);
+}
+
+.logout-button:active {
+  transform: scale(0.95);
+} 

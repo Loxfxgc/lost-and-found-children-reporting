@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import { UserTypeProvider, useUserType } from './UserTypeContext';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -86,18 +86,28 @@ function RedirectHandler() {
   
   // Special case: if user is trying to access role-selection directly but already has a role
   if (isAuthenticated && location.pathname === '/role-selection') {
-    console.log('Role selection page accessed directly with auth:', isAuthenticated, 'userType:', userType);
+    console.log('Role selection page accessed with auth:', isAuthenticated, 'userType:', userType);
     
     // Check if this is an intentional navigation from the navbar
     const isNavbarNavigation = sessionStorage.getItem('navbarRedirect') === 'true';
+    const isChangeRole = sessionStorage.getItem('changeRole') === 'true';
     const isInternalNavigation = document.referrer.includes(window.location.origin);
     
     console.log('Navigation source check:', {
       isNavbarNavigation, 
+      isChangeRole,
       isInternalNavigation,
       navbarRedirect: sessionStorage.getItem('navbarRedirect'),
+      changeRole: sessionStorage.getItem('changeRole'),
       referrer: document.referrer
     });
+    
+    // Always allow access to role selection if changing roles
+    if (isChangeRole) {
+      console.log('Allowing role selection page for role change');
+      // Don't remove the changeRole flag here, let RoleSelection handle it
+      return null;
+    }
     
     // Don't auto-redirect if coming from navbar or internal navigation
     if ((isNavbarNavigation || isInternalNavigation) && userType) {
@@ -110,7 +120,7 @@ function RedirectHandler() {
     }
     
     // Only redirect if they already have a user type and it's not an intentional navigation
-    if (userType && !isNavbarNavigation && !isInternalNavigation) {
+    if (userType && !isNavbarNavigation && !isInternalNavigation && !isChangeRole) {
       console.log('User has role, redirecting from role selection to appropriate page');
       if (userType === 'parent' && !hasReports) {
         return <Navigate to="/create" replace />;
@@ -129,6 +139,8 @@ function AppContent() {
   const { isAuthenticated } = useAuth();
   // eslint-disable-next-line no-unused-vars
   const { userType } = useUserType();
+  const location = useLocation();
+  const prevPathRef = useRef(location.pathname);
 
   // Set up real-time updates at app level
   useEffect(() => {
@@ -143,20 +155,48 @@ function AppContent() {
     }
   }, [isAuthenticated]);
 
+  // Create custom transition effect without TransitionGroup
+  useEffect(() => {
+    // Add transition effect on route change
+    const pageContainer = document.querySelector('.page-container');
+    if (pageContainer) {
+      // Check if this is a role-related navigation
+      const isRoleChange = 
+        (prevPathRef.current === '/role-selection' && location.pathname !== '/role-selection') ||
+        (prevPathRef.current !== '/role-selection' && location.pathname === '/role-selection');
+      
+      // If this is a role change, we already have a fade effect in the handlers
+      if (!isRoleChange) {
+        pageContainer.classList.add('page-transition-active');
+        
+        const timer = setTimeout(() => {
+          pageContainer.classList.remove('page-transition-active');
+        }, 400);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+    
+    // Update the ref with current path for next comparison
+    prevPathRef.current = location.pathname;
+  }, [location.key, location.pathname]);
+
   return (
     <>
       {isAuthenticated && <NavBar />}
       <RedirectHandler />
-      <Routes>
-        <Route path="/" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/role-selection" />} />
-        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
-        <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" />} />
-        <Route path="/role-selection" element={isAuthenticated ? <RoleSelection /> : <Navigate to="/" />} />
-        <Route path="/create" element={isAuthenticated ? <CreateForm /> : <Navigate to="/" />} />
-        <Route path="/view" element={isAuthenticated ? <ViewAllForms /> : <Navigate to="/" />} />
-        <Route path="/my-enquiries" element={isAuthenticated ? <ViewMyEnquiries /> : <Navigate to="/" />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <div className="page-container">
+        <Routes location={location}>
+          <Route path="/" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/role-selection" />} />
+          <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
+          <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" />} />
+          <Route path="/role-selection" element={isAuthenticated ? <RoleSelection /> : <Navigate to="/" />} />
+          <Route path="/create" element={isAuthenticated ? <CreateForm /> : <Navigate to="/" />} />
+          <Route path="/view" element={isAuthenticated ? <ViewAllForms /> : <Navigate to="/" />} />
+          <Route path="/my-enquiries" element={isAuthenticated ? <ViewMyEnquiries /> : <Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
     </>
   );
 }

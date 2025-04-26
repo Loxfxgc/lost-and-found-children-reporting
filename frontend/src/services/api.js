@@ -312,6 +312,27 @@ export const formService = {
     });
   },
   
+  // Update entire form
+  updateForm: (formId, formData) => {
+    console.log('Updating form in database:', { formId, formData }, `${API_URL}/reports/${formId}`);
+    return axios.put(`${API_URL}/reports/${formId}`, formData, {
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => {
+      console.log('Form updated in database, response:', response);
+      window.dispatchEvent(new CustomEvent('formsUpdated', { 
+        detail: { source: 'formUpdate', formId, form: response.data }
+      }));
+      return response.data;
+    })
+    .catch(error => {
+      console.error('Error updating form in database:', error.response || error);
+      throw error;
+    });
+  },
+  
   // Search forms
   searchForms: (params) => {
     let queryParams = new URLSearchParams();

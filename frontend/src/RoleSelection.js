@@ -36,7 +36,7 @@ const RoleSelection = () => {
         if (role === 'parent') {
             checkAndRedirectParent(uid);
         } else if (role === 'searcher') {
-            navigate('/enquire', { replace: true });
+            navigate('/view', { replace: true });
         }
     }, [navigate, checkAndRedirectParent]);
 
@@ -56,11 +56,13 @@ const RoleSelection = () => {
                 
                 // Check if this is an intentional navigation to role selection
                 const navbarRedirect = sessionStorage.getItem('navbarRedirect');
+                const changeRole = sessionStorage.getItem('changeRole');
                 const hasReferrer = document.referrer.includes(window.location.origin);
                 const isIntentionalNavigation = navbarRedirect === 'true' || hasReferrer;
                 
                 console.log('Navigation details:', {
                     navbarRedirect,
+                    changeRole,
                     hasReferrer,
                     isIntentionalNavigation,
                     currentUrl: window.location.href,
@@ -76,13 +78,28 @@ const RoleSelection = () => {
                     // show a message indicating they can change their role
                     setShowChangeMessage(true);
                     console.log('Showing role selection page with change message (no auto-redirect)');
+                    
+                    // If the changeRole flag is set, highlight the message for better visibility
+                    if (changeRole === 'true') {
+                        setTimeout(() => {
+                            const messageElement = document.querySelector('.role-change-message');
+                            if (messageElement) {
+                                messageElement.classList.add('highlight-message');
+                                // Remove the highlight after animation completes
+                                setTimeout(() => {
+                                    messageElement.classList.remove('highlight-message');
+                                }, 1000);
+                            }
+                        }, 300);
+                    }
                 } else {
                     console.log('Showing role selection page (no auto-redirect)');
                 }
                 
-                // Clear the navigation flag
+                // Clear the navigation flags
                 sessionStorage.removeItem('navbarRedirect');
-                console.log('Navigation flag cleared from sessionStorage');
+                sessionStorage.removeItem('changeRole');
+                console.log('Navigation flags cleared from sessionStorage');
             }
         });
 
@@ -99,6 +116,9 @@ const RoleSelection = () => {
             if (userType && userType !== type) {
                 setShowChangeMessage(false);
                 console.log(`Role changed from ${userType} to ${type}`);
+                
+                // Add transition effect
+                document.body.classList.add('fade-out');
             }
             
             // Update the context and localStorage
@@ -108,10 +128,31 @@ const RoleSelection = () => {
             // Get the current user and redirect based on role
             const user = auth.currentUser;
             if (user) {
-                redirectBasedOnRole(type, user.uid);
+                // Add a small delay for better UX when changing roles
+                const isChangingRole = userType && userType !== type;
+                
+                if (isChangingRole) {
+                    // Wait for transition effect
+                    setTimeout(() => {
+                        redirectBasedOnRole(type, user.uid);
+                        
+                        // Remove transition effect after navigation starts
+                        setTimeout(() => {
+                            document.body.classList.remove('fade-out');
+                        }, 300);
+                    }, 300);
+                } else {
+                    // No role change, redirect immediately
+                    redirectBasedOnRole(type, user.uid);
+                }
             }
         } catch (error) {
             console.error('Navigation failed:', error);
+            // Remove transition effect if there was an error
+            document.body.classList.remove('fade-out');
+            
+            // Show error message to user
+            alert('Failed to update role. Please try again.');
         }
     };
 
@@ -138,16 +179,20 @@ const RoleSelection = () => {
             <h1 style={{ marginBottom: '20px' }}>Select Your Role</h1>
             
             {showChangeMessage && (
-                <div style={{
-                    padding: '10px',
-                    margin: '0 auto 30px',
-                    backgroundColor: '#e8f4ff',
-                    borderRadius: '5px',
-                    border: '1px solid #4e73df',
-                    maxWidth: '600px'
-                }}>
+                <div 
+                    className="role-change-message"
+                    style={{
+                        padding: '15px',
+                        margin: '0 auto 30px',
+                        backgroundColor: '#e8f4ff',
+                        borderRadius: '5px',
+                        border: '1px solid #4e73df',
+                        maxWidth: '600px',
+                        transition: 'all 0.3s ease'
+                    }}
+                >
                     <p style={{ color: '#4e73df', margin: '0' }}>
-                        Your current role is <strong>{userType === 'parent' ? 'Parent/Guardian' : 'Searcher/Helper'}</strong>. 
+                        <strong>Role Change:</strong> Your current role is <strong>{userType === 'parent' ? 'Parent/Guardian' : 'Searcher/Helper'}</strong>. 
                         You can change your role by selecting a different option below.
                     </p>
                 </div>
@@ -165,23 +210,15 @@ const RoleSelection = () => {
             }}>
                 <div
                     onClick={() => handleRoleSelect('parent')}
+                    className={`role-card ${userType === 'parent' ? 'active' : ''}`}
                     style={{
                         width: '300px',
                         padding: '30px 20px',
                         border: '1px solid #e3e6f0',
                         borderRadius: '5px',
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease',
                         boxShadow: '0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1)',
-                        backgroundColor: userType === 'parent' ? '#e8f4ff' : 'white'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-5px)';
-                        e.currentTarget.style.boxShadow = '0 0.3rem 2rem 0 rgba(58, 59, 69, 0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1)';
+                        position: 'relative'
                     }}
                 >
                     <h3 style={{ marginBottom: '15px', color: '#4e73df' }}>Parent / Guardian</h3>
@@ -189,14 +226,7 @@ const RoleSelection = () => {
                         If you are a parent or guardian looking to report a missing child.
                     </p>
                     {userType === 'parent' && (
-                        <div style={{
-                            marginTop: '15px',
-                            padding: '8px',
-                            backgroundColor: '#e8f4ff',
-                            borderRadius: '4px',
-                            color: '#4e73df',
-                            fontWeight: 'bold'
-                        }}>
+                        <div className="current-role-badge">
                             Current Role
                         </div>
                     )}
@@ -204,23 +234,15 @@ const RoleSelection = () => {
                 
                 <div
                     onClick={() => handleRoleSelect('searcher')}
+                    className={`role-card ${userType === 'searcher' ? 'active' : ''}`}
                     style={{
                         width: '300px',
                         padding: '30px 20px',
                         border: '1px solid #e3e6f0',
                         borderRadius: '5px',
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease',
                         boxShadow: '0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1)',
-                        backgroundColor: userType === 'searcher' ? '#e8f4ff' : 'white'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-5px)';
-                        e.currentTarget.style.boxShadow = '0 0.3rem 2rem 0 rgba(58, 59, 69, 0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1)';
+                        position: 'relative'
                     }}
                 >
                     <h3 style={{ marginBottom: '15px', color: '#4e73df' }}>Searcher / Helper</h3>
@@ -228,19 +250,26 @@ const RoleSelection = () => {
                         If you want to help search for missing children or have information about a missing child.
                     </p>
                     {userType === 'searcher' && (
-                        <div style={{
-                            marginTop: '15px',
-                            padding: '8px',
-                            backgroundColor: '#e8f4ff',
-                            borderRadius: '4px',
-                            color: '#4e73df',
-                            fontWeight: 'bold'
-                        }}>
+                        <div className="current-role-badge">
                             Current Role
                         </div>
                     )}
                 </div>
             </div>
+            
+            {/* Add CSS for the highlight animation */}
+            <style>
+                {`
+                    @keyframes highlightMessage {
+                        0% { background-color: #e8f4ff; }
+                        50% { background-color: #c5e1ff; }
+                        100% { background-color: #e8f4ff; }
+                    }
+                    .highlight-message {
+                        animation: highlightMessage 1s ease;
+                    }
+                `}
+            </style>
         </div>
     );
 };
