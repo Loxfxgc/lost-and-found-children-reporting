@@ -24,6 +24,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Welcome route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Welcome to Lost and Found Children Reporting API',
+    version: '1.0.0',
+    status: 'running'
+  });
+});
 app.get('/api', (req, res) => {
   res.json({ 
     message: 'Welcome to Lost and Found Children Reporting API',
