@@ -196,22 +196,22 @@ const LandingPage = () => {
         <div className="logo">SAFE CONNECT</div>
         <div className="nav-links">
           <Link to="/" className="nav-link" onClick={() => setActiveSection('home')}>Home</Link>
-          <a href="#" className="nav-link" onClick={(e) => {
+          <button href="#" className="nav-link" onClick={(e) => {
             e.preventDefault();
             setActiveSection('about');
-          }}>About</a>
-          <a href="#" className="nav-link" onClick={(e) => {
+          }}>About</button>
+          <button href="#" className="nav-link" onClick={(e) => {
             e.preventDefault();
             setActiveSection('services');
-          }}>Services</a>
-          <a href="#" className="nav-link" onClick={(e) => {
+          }}>Services</button>
+          <button href="#" className="nav-link" onClick={(e) => {
             e.preventDefault();
             setActiveSection('how-it-works');
-          }}>How It Works</a>
-          <a href="#" className="nav-button" onClick={(e) => {
+          }}>How It Works</button>
+          <button href="#" className="nav-button" onClick={(e) => {
             e.preventDefault();
             setActiveSection('contact');
-          }}>CONTACT</a>
+          }}>CONTACT</button>
         </div>
       </nav>
 

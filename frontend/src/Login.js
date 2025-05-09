@@ -210,11 +210,11 @@ const Login = () => {
                                 fontSize: '13px',
                                 color: '#666'
                             }}>Password</label>
-                            <a href="#" style={{
+                            <Link href="#" style={{
                                 fontSize: '12px',
                                 color: '#3f51b5',
                                 textDecoration: 'none'
-                            }}>Forgot password?</a>
+                            }}>Forgot password?</Link>
                         </div>
                         <input
                             id="password"

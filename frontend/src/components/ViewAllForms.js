@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Forms.css';
-import { FaSearch, FaRedo, FaTrash, FaThList, FaTh, FaCamera, FaChevronDown, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaRedo, FaTrash, FaThList, FaTh, FaCamera, FaTimes } from 'react-icons/fa';
 import { formService } from '../services/api';
 import { useUserType } from '../UserTypeContext';
 import CameraCapture from './CameraCapture';
@@ -11,8 +11,7 @@ const ViewAllForms = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [loadingImages, setLoadingImages] = useState({});
-    const [error, setError] = useState(null);
-    const [actionStatus, setActionStatus] = useState({ message: '', type: '' });
+    const [setError] = useState(null);
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
     const { userType } = useUserType();
     const [showCamera, setShowCamera] = useState(false);
@@ -24,10 +23,51 @@ const ViewAllForms = () => {
         return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
+    // Fetch all forms from database
+    const fetchForms = useCallback(async () => {
+        try {
+            // Temporarily show loading in the forms container instead of status message
+            setFilteredForms([]);
+            setForms([]);
+            
+            // Fetch from API instead of localStorage
+            const response = await formService.getAllForms();
+            
+            // Handle different response formats
+            let fetchedForms = [];
+            if (response) {
+                if (Array.isArray(response)) {
+                    fetchedForms = response;
+                } else if (response.data && Array.isArray(response.data)) {
+                    fetchedForms = response.data;
+                } else if (typeof response === 'object') {
+                    fetchedForms = [response];
+                }
+            }
+            
+            // Ensure all forms have a created date and unique ID
+            const formsWithDates = fetchedForms.map(form => ({
+                ...form,
+                created: form.createdAt || form.created || new Date().toISOString(),
+                id: form._id || form.id || Math.random().toString(36).substr(2, 9) // Ensure ID exists
+            }));
+            
+            // Sort by created date (newest first)
+            formsWithDates.sort((a, b) => new Date(b.created) - new Date(a.created));
+            
+            setForms(formsWithDates);
+            setFilteredForms(formsWithDates);
+            
+        } catch (error) {
+            console.error('Error fetching forms from database:', error);
+            setError('Failed to load forms from database. Please try again.');
+        }
+    }, [setError]);
+
     // Fetch forms on component mount
     useEffect(() => {
         fetchForms();
-    }, []);
+    }, [fetchForms]);
 
     // Handle opening the detailed modal
     const openFormDetail = (form, e) => {
@@ -71,48 +111,6 @@ const ViewAllForms = () => {
         };
     }, [selectedForm]);
 
-    // Fetch all forms from database
-    const fetchForms = async () => {
-        try {
-            // Temporarily show loading in the forms container instead of status message
-            setFilteredForms([]);
-            setForms([]);
-            
-            // Fetch from API instead of localStorage
-            const response = await formService.getAllForms();
-            
-            // Handle different response formats
-            let fetchedForms = [];
-            if (response) {
-                if (Array.isArray(response)) {
-                    fetchedForms = response;
-                } else if (response.data && Array.isArray(response.data)) {
-                    fetchedForms = response.data;
-                } else if (typeof response === 'object') {
-                    fetchedForms = [response];
-                }
-            }
-            
-            // Ensure all forms have a created date and unique ID
-            const formsWithDates = fetchedForms.map(form => ({
-                ...form,
-                created: form.createdAt || form.created || new Date().toISOString(),
-                id: form._id || form.id || Math.random().toString(36).substr(2, 9) // Ensure ID exists
-            }));
-            
-            // Sort by created date (newest first)
-            formsWithDates.sort((a, b) => new Date(b.created) - new Date(a.created));
-            
-            setForms(formsWithDates);
-            setFilteredForms(formsWithDates);
-            
-            // Only show message if there was an error - removed success message
-        } catch (error) {
-            console.error('Error fetching forms from database:', error);
-            setError('Failed to load forms from database. Please try again.');
-        }
-    };
-
     // Filter forms based on search term and status
     useEffect(() => {
         if (forms.length > 0) {
@@ -134,7 +132,7 @@ const ViewAllForms = () => {
 
             setFilteredForms(filtered);
         }
-    }, [searchTerm, statusFilter, forms]);
+    }, [searchTerm, statusFilter, fetchForms,forms]);
 
     // Handle searching
     const handleSearch = (e) => {

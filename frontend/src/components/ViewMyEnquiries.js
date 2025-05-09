@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserType } from '../UserTypeContext';
 import { imageService, formService } from '../services/api';
-import { FaTrash, FaEdit, FaEye, FaPencilAlt, FaPlus, FaCheck, FaSearch, FaTimesCircle, FaTimes } from 'react-icons/fa';
+import { FaTrash, FaEdit, FaPlus, FaSearch, FaTimesCircle, FaTimes } from 'react-icons/fa';
 import EditFormModal from './EditFormModal';
 import './Forms.css';
 
@@ -21,21 +21,7 @@ const ViewMyEnquiries = () => {
     const [filteredForms, setFilteredForms] = useState([]);
     const [statusFilter, setStatusFilter] = useState('all');
 
-    const handleMarkFound = async (formId) => {
-        try {
-            // Update form status in the database
-            await formService.updateFormStatus(formId, 'found');
-            
-            // Show success notification
-            showNotification('Success', 'Child marked as found successfully!', 'success');
-            
-            // Fetch updated forms
-            fetchForms();
-        } catch (err) {
-            console.error('Error marking form as found:', err);
-            showNotification('Error', 'Failed to update form status. Please try again.', 'error');
-        }
-    };
+    
 
     const showNotification = (title, message, type = 'success') => {
         const alertDiv = document.createElement('div');
@@ -68,6 +54,41 @@ const ViewMyEnquiries = () => {
             }
         }, 5000);
     };
+
+    // Helper functions wrapped in useCallback
+    const getName = useCallback((form) => {
+        return form.childName || form.name || 'Unknown';
+    }, []);
+
+    const getDescription = useCallback((form) => {
+        return form.description || 'No description provided';
+    }, []);
+
+    const getLocation = useCallback((form) => {
+        return form.lastSeenLocation || form.location || 'Unknown location';
+    }, []);
+
+    // Apply filters to forms array
+    const applyFilters = useCallback((formsArray, search, status) => {
+        let result = [...formsArray];
+        
+        // Apply search term filter
+        if (search) {
+            const searchLower = search.toLowerCase();
+            result = result.filter(form => 
+                getName(form).toLowerCase().includes(searchLower) ||
+                getDescription(form).toLowerCase().includes(searchLower) ||
+                getLocation(form).toLowerCase().includes(searchLower)
+            );
+        }
+        
+        // Apply status filter
+        if (status && status !== 'all') {
+            result = result.filter(form => form.status === status);
+        }
+        
+        return result;
+    }, [getName, getDescription, getLocation]);
 
     const confirmDeleteForm = (formId) => {
         // Find the form to be deleted for display in the modal
@@ -186,10 +207,10 @@ const ViewMyEnquiries = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentUser, searchTerm, statusFilter]);
+    }, [currentUser, searchTerm, statusFilter,applyFilters]);
     
     // Helper function to get the best image URL
-    const getImageUrl = (form) => {
+    const getImageUrl = useCallback((form) => {
         // First try to use Cloudinary URL if available
         if (form.photoUrl) {
             return form.photoUrl;
@@ -203,42 +224,27 @@ const ViewMyEnquiries = () => {
         }
         // Fallback to local preview
         return form.photoPreview;
-    };
-
-    // Helper function to get the name from different field structures
-    const getName = (form) => {
-        return form.childName || form.name || 'Unknown';
-    };
+    }, []);
     
     // Helper function to get the age from different field structures
-    const getAge = (form) => {
+    const getAge = useCallback((form) => {
         return form.childAge || form.age || 'N/A';
-    };
-    
-    // Helper function to get the description
-    const getDescription = (form) => {
-        return form.description || 'No description provided';
-    };
-    
-    // Helper function to get the location from different field structures
-    const getLocation = (form) => {
-        return form.lastSeenLocation || form.location || 'Unknown location';
-    };
+    }, []);
     
     // Helper function to get the lastSeenDate from different field structures
-    const getLastSeenDate = (form) => {
+    const getLastSeenDate = useCallback((form) => {
         return form.lastSeenDate || form.createdAt || new Date().toISOString();
-    };
+    }, []);
     
     // Helper function to get contact info
-    const getContactInfo = (form) => {
+    const getContactInfo = useCallback((form) => {
         return form.contactInfo || form.contactPhone || form.contactEmail || 'No contact info provided';
-    };
+    }, []);
 
     // Helper function to get identifying features
-    const getIdentifyingFeatures = (form) => {
+    const getIdentifyingFeatures = useCallback((form) => {
         return form.identifyingFeatures || 'None specified';
-    };
+    }, []);
 
     // Add this new function for deleting responses
     const handleDeleteResponse = async (formId, responseIndex) => {
@@ -317,27 +323,7 @@ const ViewMyEnquiries = () => {
         setFilteredForms(applyFilters(forms, searchTerm, value));
     };
 
-    // Apply filters to forms array
-    const applyFilters = (formsArray, search, status) => {
-        let result = [...formsArray];
-        
-        // Apply search term filter
-        if (search) {
-            const searchLower = search.toLowerCase();
-            result = result.filter(form => 
-                getName(form).toLowerCase().includes(searchLower) ||
-                getDescription(form).toLowerCase().includes(searchLower) ||
-                getLocation(form).toLowerCase().includes(searchLower)
-            );
-        }
-        
-        // Apply status filter
-        if (status && status !== 'all') {
-            result = result.filter(form => form.status === status);
-        }
-        
-        return result;
-    };
+   
 
     // Add a report
     const handleAddReport = () => {
@@ -452,9 +438,11 @@ const ViewMyEnquiries = () => {
                             <div className="form-content">
                                 {getImageUrl(form) && (
                                     <div className="form-image">
-                                        <img 
+                                        <img
                                             src={getImageUrl(form)} 
-                                            alt={`Photo of ${getName(form)}`} 
+                                            height={100}
+                                            width={100}
+                                            alt="Child" 
                                             onError={(e) => e.target.src = `${process.env.PUBLIC_URL}/placeholder.png`}
                                         />
                                     </div>
