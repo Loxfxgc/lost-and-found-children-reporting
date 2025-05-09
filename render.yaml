@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: lost-and-found-children-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: "50001"
+      - key: MONGODB_URI
+        fromSecret: MONGODB_URI
+      - key: NODE_ENV
+        fromSecret: NODE_ENV

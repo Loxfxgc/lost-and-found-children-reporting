@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:50001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'https://lost-and-found-children-reporting.vercel.app/api';
 
 // Create axios instance with configuration
 const api = axios.create({

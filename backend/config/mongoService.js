@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:50001/api'; // Update with your MongoDB server URL
+const API_BASE = 'https://lost-and-found-children-reporting.vercel.app/api'; // Update with your MongoDB server URL
 
 export const submitForm = async (formData) => {
   try {
