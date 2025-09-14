@@ -25,7 +25,7 @@ const CreateForm = () => {
     });
     const [photoFile, setPhotoFile] = useState(null);
     const [photoUrl, setPhotoUrl] = useState('');
-    const [setPhotoId] = useState('');
+    const [photoId, setPhotoId] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [uploadProgress, setUploadProgress] = useState(0);
