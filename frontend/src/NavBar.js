@@ -5,12 +5,15 @@ import { signOut } from 'firebase/auth';
 import { useAuth } from './services/authService';
 import { useUserType } from './UserTypeContext';
 import LogoutButton from './components/LogoutButton';
+import { useTheme } from './ThemeContext';
+import { FaMoon, FaSun } from 'react-icons/fa';
 
 const NavBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
   const { userType } = useUserType();
+  const { isDarkMode, toggleTheme } = useTheme();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   
@@ -125,7 +128,28 @@ const NavBar = () => {
         )}
       </div>
       
-      <div style={{ display: 'flex', gap: '20px' }}>
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+        {/* Theme toggle button */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#5a5c69',
+            fontSize: '1.2rem',
+            padding: '5px',
+            borderRadius: '50%',
+            transition: 'all 0.3s ease'
+          }}
+          aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {isDarkMode ? <FaSun /> : <FaMoon />}
+        </button>
+        
         {/* Parent role links */}
         {userType === 'parent' && (
           <>
@@ -165,4 +189,4 @@ const NavBar = () => {
   );
 };
 
-export default NavBar; 
+export default NavBar;

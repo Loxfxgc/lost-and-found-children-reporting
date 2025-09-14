@@ -48,6 +48,5 @@
   },
   "devDependencies": {
     "firebase-tools": "^14.1.0"
-  },
-  "proxy": "http://localhost:5000"
+  }
 }

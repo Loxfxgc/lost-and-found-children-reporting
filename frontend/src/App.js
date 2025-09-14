@@ -11,7 +11,9 @@ import RoleSelection from './RoleSelection';
 import ViewMyEnquiries from './components/ViewMyEnquiries';
 import { useAuth } from './services/authService';
 import LandingPage from './pages/LandingPage';
+import { ThemeProvider } from './ThemeContext';
 import { setupStorageListener, startFormPolling, stopFormPolling, formService } from './services/api';
+import './styles/theme.css';
 
 // Initialize global real-time updates
 const initializeRealTimeUpdates = () => {
@@ -208,6 +210,7 @@ function App() {
   }, []);
 
   return (
+    <ThemeProvider>
     <ErrorBoundary onReset={handleResetError}>
       <UserTypeProvider>
         <Router>
@@ -215,6 +218,7 @@ function App() {
         </Router>
       </UserTypeProvider>
     </ErrorBoundary>
+    </ThemeProvider>
   );
 }
 
