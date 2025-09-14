@@ -25,7 +25,6 @@ const CreateForm = () => {
     });
     const [photoFile, setPhotoFile] = useState(null);
     const [photoUrl, setPhotoUrl] = useState('');
-    const [photoId, setPhotoId] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -62,7 +61,6 @@ const CreateForm = () => {
             
             // Reset previous uploads
             setPhotoUrl('');
-            setPhotoId('');
             setUploadProgress(0);
             setUploadError('');
             
@@ -109,7 +107,6 @@ const CreateForm = () => {
                             publicId: uploadResult.public_id
                         };
                         setPhotoUrl(uploadResult.secure_url);
-                        setPhotoId(uploadResult.public_id);
                     } else {
                         throw new Error('Image upload failed - missing URL');
                     }
@@ -126,7 +123,6 @@ const CreateForm = () => {
                 reporterUid: currentUser?.uid || '',
                 childImageId: imageData?.publicId || '',
                 photoUrl: imageData?.url || '',
-                photoId: imageData?.publicId || '',
                 // Fill in any missing required fields from the model
                 contactName: formData.contactName || currentUser?.displayName || 'Anonymous',
                 contactPhone: formData.contactPhone || currentUser?.phoneNumber || 'Not provided',
@@ -161,7 +157,6 @@ const CreateForm = () => {
             });
             setPhotoFile(null);
             setPhotoUrl('');
-            setPhotoId('');
             setUploadProgress(0);
             
             // Navigate after a short delay to show success message
