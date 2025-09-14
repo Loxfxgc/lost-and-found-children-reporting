@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserType } from './UserTypeContext';
-import { useTheme } from './ThemeContext';
 import { FaUserShield, FaSearch, FaCheck } from 'react-icons/fa';
 import './RoleSelection.css';
 
 const RoleSelection = () => {
     const navigate = useNavigate();
     const { userType, setUserType } = useUserType();
-    const { isDarkMode } = useTheme();
     const [loading, setLoading] = useState(false);
 
     const handleRoleSelect = async (role) => {
